@@ -57,7 +57,7 @@ const Feed = {
     view.innerHTML = `<div class="empty">Loading the feed…</div>`;
     const [{ data: prints, error }, blocked, { data: myStamps }] = await Promise.all([
       sb.from("prints")
-        .select("id, title, image_path, uvi, exposure, paper, asking_help, reviewed_at, owner, allow_comments, profiles(display_name), stamps(count), comments(count)")
+        .select("id, title, image_path, uvi, exposure, paper, asking_help, reviewed_at, owner, allow_comments, profiles!prints_owner_fkey(display_name), stamps(count), comments(count)")
         .eq("status", "approved")
         .order("reviewed_at", { ascending: false })
         .limit(50),
@@ -108,7 +108,7 @@ const Feed = {
   async detail(view, id) {
     view.innerHTML = `<div class="empty">Loading print…</div>`;
     const [{ data: p, error }, blocked, { data: myStamp }] = await Promise.all([
-      sb.from("prints").select("*, profiles(display_name), stamps(count)").eq("id", id).single(),
+      sb.from("prints").select("*, profiles!prints_owner_fkey(display_name), stamps(count)").eq("id", id).single(),
       Feed.blockedSet(),
       sb.from("stamps").select("print_id").match({ user_id: DB.uid(), print_id: id })
     ]);
@@ -173,7 +173,7 @@ const Feed = {
 
   async comments(box, p, blocked) {
     const { data: list, error } = await sb.from("comments")
-      .select("id, body, created_at, author, profiles(display_name)")
+      .select("id, body, created_at, author, profiles!comments_author_fkey(display_name)")
       .eq("print_id", p.id)
       .order("created_at", { ascending: true });
     if (error) { box.innerHTML = `<div class="form-note">${esc(error.message)}</div>`; return; }

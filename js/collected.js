@@ -4,7 +4,7 @@ const Collected = {
   async render(view) {
     view.innerHTML = `<div class="empty">Loading your collection…</div>`;
     const { data, error } = await sb.from("stamps")
-      .select("created_at, prints(id, title, image_path, status, owner, profiles(display_name))")
+      .select("created_at, prints(id, title, image_path, status, owner, profiles!prints_owner_fkey(display_name))")
       .eq("user_id", DB.uid())
       .order("created_at", { ascending: false });
 

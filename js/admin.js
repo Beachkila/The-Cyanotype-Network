@@ -13,7 +13,7 @@ const Admin = {
 
     const [{ data: queue, error: qErr }, { data: reports }] = await Promise.all([
       sb.from("prints")
-        .select("*, profiles(display_name)")
+        .select("*, profiles!prints_owner_fkey(display_name)")
         .eq("status", "submitted")
         .order("submitted_at", { ascending: true }),
       sb.from("reports")
