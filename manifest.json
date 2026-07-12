@@ -1,0 +1,13 @@
+{
+  "name": "The Cyanotype Network",
+  "short_name": "Cyanotype",
+  "description": "A community gallery and field-report network for cyanotype printers. A Studio Wetware project.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#fcfbf7",
+  "theme_color": "#16385c",
+  "icons": [
+    { "src": "assets/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "assets/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

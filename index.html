@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Cyanotype Network</title>
+<meta name="description" content="A community gallery and field-report network for cyanotype printers. A Studio Wetware project.">
+<link rel="stylesheet" href="style.css">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#16385c">
+<link rel="apple-touch-icon" href="assets/icon-192.png">
+</head>
+<body class="variant-b">
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="wordmark">THE CYANOTYPE <span>NETWORK</span></div>
+    <nav aria-label="Main" id="mainNav" hidden>
+      <button data-nav="feed">Feed</button>
+      <button data-nav="forecast">Forecast</button>
+      <button data-nav="mine">My Prints</button>
+      <button data-nav="collected">Collected</button>
+      <button data-nav="account">Account</button>
+    </nav>
+  </div>
+</header>
+
+<main class="col" id="view" aria-live="polite">
+  <div class="empty">Loading…</div>
+</main>
+
+<footer>The Cyanotype Network · a Studio Wetware project</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/db.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/upload.js"></script>
+<script src="js/forecast.js"></script>
+<script src="js/feed.js"></script>
+<script src="js/collected.js"></script>
+<script src="js/myprints.js"></script>
+<script src="js/router.js"></script>
+<script>
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js");
+</script>
+</body>
+</html>
