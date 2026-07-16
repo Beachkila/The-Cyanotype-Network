@@ -10,6 +10,7 @@ const Router = {
     upload:    (v)      => Mine.uploadForm(v),
     edit:      (v, arg) => Mine.uploadForm(v, arg),
     collected: (v)      => Collected.render(v),
+    negatives: (v)      => Negatives.render(v),
     account:   (v)      => Mine.account(v)
   },
 
