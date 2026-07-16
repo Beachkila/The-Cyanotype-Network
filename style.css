@@ -169,3 +169,12 @@ footer{ max-width:600px; margin:0 auto; padding:16px; color:var(--faint); font-s
 .switch input:checked + .track::after{left:25px;}
 .switch input:focus-visible + .track{outline:2px solid var(--prussian); outline-offset:2px;}
 @media (prefers-reduced-motion:reduce){ .track,.track::after{transition:none;} }
+
+/* ---- desktop: widen the single column ---- */
+@media (min-width: 900px){
+  .topbar-inner,
+  .col,
+  footer{
+    max-width: 1200px;
+  }
+}
