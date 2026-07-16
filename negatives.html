@@ -57,7 +57,7 @@
   .col-left{grid-area:left}
   .col-right{grid-area:right}
   .stage-card{grid-area:stage;position:sticky;top:14px;align-self:start}
-  @media (max-width:1080px){.editor{grid-template-columns:1fr 1fr;grid-template-areas:"stage stage" "left right"}}
+  @media (max-width:1080px){.editor{grid-template-columns:1fr 1fr;grid-template-areas:"stage stage" "left right"}.stage-card{position:static;top:auto}}
   @media (max-width:680px){.editor{grid-template-columns:1fr;grid-template-areas:"stage" "left" "right"}}
 
   .stage-card{background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden}
@@ -156,6 +156,7 @@
     <a href="#" aria-current="page">Negatives</a>
   </nav>
 </div>
+<script>if(window.self!==window.top){var _m=document.querySelector('.masthead');if(_m)_m.style.display='none';document.body.style.background='transparent';}</script>
 
 <div class="container">
   <div class="page-head">
