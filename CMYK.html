@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Separations · The Cyanotype Network</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f6f4ee;
+    --card:#fcfbf7;
+    --ink:#1c1c1c;
+    --ink-soft:#4a4a44;
+    --blue:#003e64;
+    --blue-bright:#0a5c8f;
+    --prussian:#003159;
+    --line:#e4dfd1;
+    --line-soft:#efeadd;
+    --muted:#6b695e;
+    --danger:#a34434;
+    --help-bg:#deedb6;
+    --help-ink:#40561f;
+    --field:#8a8a8a;                 /* neutral viewing field for judging plates */
+    --serif:"Spectral",Georgia,serif;
+    --sans:"IBM Plex Sans",system-ui,sans-serif;
+    --mono:"IBM Plex Mono",ui-monospace,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;min-height:100%}
+  body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+
+  /* masthead (Network chrome) */
+  .masthead{padding:18px 22px 0;border-bottom:1px solid var(--line);background:var(--card);text-align:center}
+  .wordmark{font-family:var(--serif);font-size:23px;font-weight:600;letter-spacing:.13em;display:inline-block}
+  .wordmark .a{color:#16385c}
+  .wordmark .b{color:#8899a6}
+  .nav{display:flex;gap:26px;justify-content:center;flex-wrap:wrap;margin-top:14px}
+  .nav a{font-family:var(--serif);font-size:15px;color:#66757f;text-decoration:none;padding-bottom:12px;border-bottom:2px solid transparent}
+  .nav a:hover{color:var(--blue)}
+  .nav a[aria-current]{color:var(--ink);border-bottom-color:var(--blue)}
+
+  .container{max-width:1200px;margin:0 auto;padding:22px 22px 60px}
+  .page-head{margin-bottom:18px}
+  .page-head h1{font-family:var(--serif);font-weight:600;font-size:30px;line-height:1.05;margin:0;color:var(--prussian);letter-spacing:-.01em}
+  .page-sub{display:block;margin-top:7px;color:var(--muted);font-size:12.5px;font-family:var(--mono);letter-spacing:.02em}
+
+  /* drop zone */
+  #drop{border:1px dashed var(--line);border-radius:10px;background:var(--card);padding:34px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s}
+  #drop.hot{border-color:var(--blue-bright);background:#fff}
+  #drop p{margin:6px 0;font-family:var(--mono);font-size:12px;color:var(--muted)}
+  #drop strong{color:var(--prussian);font-family:var(--serif);font-size:17px;font-weight:600}
+
+  /* controls */
+  .controls{display:flex;gap:24px;flex-wrap:wrap;align-items:flex-end;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin-top:16px}
+  .ctl{display:flex;flex-direction:column;gap:7px}
+  .ctl > label{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  .seg{display:flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+  .seg button{background:var(--card);color:var(--muted);border:0;padding:8px 13px;font-family:var(--mono);font-size:12px;cursor:pointer;border-right:1px solid var(--line)}
+  .seg button:last-child{border-right:0}
+  .seg button[aria-pressed="true"]{background:var(--blue);color:#fff;font-weight:600}
+  .seg button:focus-visible{outline:2px solid var(--blue-bright);outline-offset:2px}
+  .check{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:12px;cursor:pointer;color:var(--ink)}
+  .check input{accent-color:var(--blue);width:15px;height:15px}
+  .push{background:var(--blue);border:1px solid var(--blue);color:#fff;padding:9px 15px;font-family:var(--mono);font-size:12px;border-radius:6px;cursor:pointer}
+  .push:hover{background:var(--blue-bright);border-color:var(--blue-bright)}
+  .push:disabled{opacity:.4;cursor:not-allowed}
+  .push:focus-visible{outline:2px solid var(--blue-bright);outline-offset:2px}
+
+  /* plates */
+  #plates{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px;margin-top:22px}
+  .plate{border:1px solid var(--line);border-radius:10px;background:var(--card);overflow:hidden;display:flex;flex-direction:column}
+  .plate .bar{display:flex;justify-content:space-between;align-items:baseline;padding:10px 12px;border-bottom:1px solid var(--line-soft)}
+  .plate .name{font-family:var(--mono);font-size:12px;letter-spacing:.08em;color:var(--ink)}
+  .plate .cov{font-family:var(--mono);font-size:11px;color:var(--muted)}
+  .plate .stage{background:var(--field);padding:14px;display:flex;justify-content:center;align-items:center;min-height:120px}
+  .plate canvas{max-width:100%;height:auto;display:block;box-shadow:0 0 0 1px rgba(0,0,0,.25)}
+  .plate .foot{padding:9px 12px;border-top:1px solid var(--line-soft)}
+  .plate .foot button{width:100%;background:transparent;border:1px solid var(--line);color:var(--ink);padding:7px;font-family:var(--mono);font-size:11px;border-radius:6px;cursor:pointer}
+  .plate .foot button:hover{border-color:var(--blue);color:var(--blue)}
+
+  .empty{color:var(--muted);font-family:var(--mono);font-size:12px;padding:40px 0;text-align:center}
+  .note{margin-top:26px;padding-top:16px;border-top:1px solid var(--line);font-family:var(--mono);font-size:11px;color:var(--muted);line-height:1.7}
+  .note b{color:var(--ink)}
+  .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:baseline}
+
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="masthead">
+  <div class="wordmark"><span class="a">THE CYANOTYPE</span> <span class="b">NETWORK</span></div>
+  <nav class="nav">
+    <a href="index.html#/feed">Feed</a>
+    <a href="index.html#/negatives">Negatives</a>
+    <a href="index.html#/forecast">Forecast</a>
+    <a href="index.html#/mine">My Prints</a>
+    <a href="index.html#/collected">Collected</a>
+    <a href="index.html#/account">Account</a>
+    <a href="#" aria-current="page">Separations</a>
+  </nav>
+</div>
+<script>if(window.self!==window.top){var _m=document.querySelector('.masthead');if(_m)_m.style.display='none';document.body.style.background='transparent';document.documentElement.classList.add('embedded');}</script>
+
+<div class="container">
+  <div class="page-head">
+    <h1>Separation Bench</h1>
+    <span class="page-sub">RGB to CMY / CMYK separations — per-channel film or ink, negative or positive.</span>
+  </div>
+
+  <div id="drop" tabindex="0" role="button" aria-label="Load an image">
+    <p><strong>Drop an image</strong> or click to choose</p>
+    <p>PNG / JPG / WEBP · processed at native resolution</p>
+  </div>
+  <input type="file" id="file" accept="image/*" hidden>
+
+  <div class="controls" id="controls" style="display:none">
+    <div class="ctl">
+      <label>Plates</label>
+      <div class="seg" id="segK" role="group">
+        <button data-v="cmy"  aria-pressed="true">CMY · 3 dye</button>
+        <button data-v="cmyk" aria-pressed="false">CMYK · 4</button>
+      </div>
+    </div>
+    <div class="ctl">
+      <label>Output</label>
+      <div class="seg" id="segPol" role="group">
+        <button data-v="neg" aria-pressed="true">Negative</button>
+        <button data-v="pos" aria-pressed="false">Positive</button>
+      </div>
+    </div>
+    <div class="ctl">
+      <label>Render</label>
+      <div class="seg" id="segView" role="group">
+        <button data-v="film" aria-pressed="true">Film (gray)</button>
+        <button data-v="ink"  aria-pressed="false">Ink color</button>
+      </div>
+    </div>
+    <div class="ctl">
+      <label>Alignment</label>
+      <label class="check"><input type="checkbox" id="reg"> Registration marks</label>
+    </div>
+    <div class="ctl">
+      <label>&nbsp;</label>
+      <button class="push" id="dlAll">Download all plates</button>
+    </div>
+  </div>
+
+  <div id="plates"><div class="empty">no image loaded</div></div>
+
+  <div class="note" id="note" style="display:none">
+    <b>Negative</b> — clear where the ink prints; expose through it on transparency.
+    <b>Positive</b> — opaque where the ink prints; for screen photo-emulsion.
+    Registration marks print on every plate for aligning layers.
+    Coverage % is the average ink demand per channel.
+    <br><br>
+    Direct-math conversion, not an ICC/press profile. Pull a proof before committing dye.
+    Halftone presses need a dot screen per plate.
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var drop=document.getElementById('drop'),
+      file=document.getElementById('file'),
+      controls=document.getElementById('controls'),
+      platesEl=document.getElementById('plates'),
+      note=document.getElementById('note');
+
+  var state={ img:null, w:0, h:0,
+              cov:null,          // {c,m,y,k} Uint8ClampedArray coverage 0..255
+              useK:false, pol:'neg', view:'film', reg:false };
+
+  var CH=[
+    {key:'c', name:'Cyan',    rgb:[0,174,239]},
+    {key:'m', name:'Magenta', rgb:[236,0,140]},
+    {key:'y', name:'Yellow',  rgb:[255,222,23]},
+    {key:'k', name:'Black',   rgb:[26,26,26]}
+  ];
+
+  /* ---- input ---- */
+  drop.addEventListener('click',function(){file.click();});
+  drop.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();file.click();}});
+  drop.addEventListener('dragover',function(e){e.preventDefault();drop.classList.add('hot');});
+  drop.addEventListener('dragleave',function(){drop.classList.remove('hot');});
+  drop.addEventListener('drop',function(e){e.preventDefault();drop.classList.remove('hot');if(e.dataTransfer.files[0])load(e.dataTransfer.files[0]);});
+  file.addEventListener('change',function(){if(file.files[0])load(file.files[0]);});
+
+  function load(f){
+    if(!/^image\//.test(f.type)){platesEl.innerHTML='<div class="empty">that file isn\'t an image</div>';return;}
+    var url=URL.createObjectURL(f);
+    var im=new Image();
+    im.onload=function(){URL.revokeObjectURL(url);state.img=im;state.w=im.naturalWidth;state.h=im.naturalHeight;separate();controls.style.display='flex';note.style.display='block';drop.querySelector('strong').textContent=f.name;};
+    im.onerror=function(){URL.revokeObjectURL(url);platesEl.innerHTML='<div class="empty">couldn\'t decode that image</div>';};
+    im.src=url;
+  }
+
+  /* ---- one-pass RGB -> coverage arrays ---- */
+  function separate(){
+    var w=state.w,h=state.h,n=w*h;
+    var c=document.createElement('canvas');c.width=w;c.height=h;
+    var cx=c.getContext('2d',{willReadFrequently:true});
+    cx.drawImage(state.img,0,0);
+    var d=cx.getImageData(0,0,w,h).data;
+    var C=new Uint8ClampedArray(n),M=new Uint8ClampedArray(n),Y=new Uint8ClampedArray(n),K=new Uint8ClampedArray(n);
+    var useK=state.useK;
+    for(var i=0,p=0;i<n;i++,p+=4){
+      var r=d[p]/255,g=d[p+1]/255,b=d[p+2]/255;
+      var cc,mm,yy,kk;
+      if(!useK){ cc=1-r; mm=1-g; yy=1-b; kk=0; }
+      else{
+        kk=1-Math.max(r,g,b);
+        if(kk>=0.99999){cc=0;mm=0;yy=0;}
+        else{var inv=1-kk;cc=(1-r-kk)/inv;mm=(1-g-kk)/inv;yy=(1-b-kk)/inv;}
+      }
+      C[i]=cc*255;M[i]=mm*255;Y[i]=yy*255;K[i]=kk*255;
+    }
+    state.cov={c:C,m:M,y:Y,k:K};
+    render();
+  }
+
+  /* ---- render each plate ---- */
+  function render(){
+    if(!state.cov)return;
+    var w=state.w,h=state.h,n=w*h;
+    var active=state.useK?CH:CH.slice(0,3);
+    platesEl.innerHTML='';
+    active.forEach(function(ch){
+      var cov=state.cov[ch.key];
+      var sum=0;
+      var neg=state.pol==='neg', ink=state.view==='ink';
+      // margin only when marks are on, so targets sit OUTSIDE the artwork
+      var m=state.reg?Math.max(28,Math.round(Math.min(w,h)*0.06)):0;
+      var cw=w+2*m, chh=h+2*m;
+      var cvs=document.createElement('canvas');cvs.width=cw;cvs.height=chh;
+      var g=cvs.getContext('2d');
+      // fill the whole plate with the zero-ink base tone for this mode
+      g.fillStyle = ink ? '#fff' : (neg ? '#000' : '#fff');
+      g.fillRect(0,0,cw,chh);
+      var out=g.createImageData(w,h),o=out.data;
+      for(var i=0,p=0;i<n;i++,p+=4){
+        var v=cov[i];sum+=v;               // v = ink coverage 0..255
+        if(ink){
+          // ink laid on white paper; more coverage -> more toward ink hue
+          var t=v/255;
+          o[p]  =255-(255-ch.rgb[0])*t;
+          o[p+1]=255-(255-ch.rgb[1])*t;
+          o[p+2]=255-(255-ch.rgb[2])*t;
+        }else{
+          // film: negative -> clear(white) where ink is; positive -> opaque(black) where ink is
+          var g8=neg?v:255-v;
+          o[p]=o[p+1]=o[p+2]=g8;
+        }
+        o[p+3]=255;
+      }
+      g.putImageData(out,m,m);            // center the artwork inside the margin
+      if(state.reg)drawReg(g,w,h,m,neg,ink);
+
+      var pct=(sum/255/n*100).toFixed(1);
+      var panel=document.createElement('div');panel.className='plate';
+      panel.innerHTML=
+        '<div class="bar"><span class="name"><span class="dot" style="background:rgb('+ch.rgb.join(',')+')"></span>'+ch.name+'</span>'+
+        '<span class="cov">'+pct+'% cov</span></div>'+
+        '<div class="stage"></div>'+
+        '<div class="foot"><button>Download '+ch.name+' &darr;</button></div>';
+      panel.querySelector('.stage').appendChild(cvs);
+      panel.querySelector('.foot button').addEventListener('click',function(){save(cvs,ch.name);});
+      platesEl.appendChild(panel);
+    });
+  }
+
+  function drawReg(g,w,h,m,neg,ink){
+    // targets centered in the margin bands, outside the artwork,
+    // at identical positions on every plate so the layers register
+    g.strokeStyle = ink ? '#111' : (neg ? '#fff' : '#000');
+    var r=Math.max(6,m*0.4);
+    g.lineWidth=Math.max(1,Math.round(Math.min(w,h)*0.003));
+    var cx=m+w/2, cy=m+h/2;
+    [[cx,m/2],[cx,m+h+m/2],[m/2,cy],[m+w+m/2,cy]].forEach(function(pt){
+      g.beginPath();
+      g.moveTo(pt[0]-r,pt[1]);g.lineTo(pt[0]+r,pt[1]);
+      g.moveTo(pt[0],pt[1]-r);g.lineTo(pt[0],pt[1]+r);
+      g.stroke();
+      g.beginPath();g.arc(pt[0],pt[1],r*0.55,0,Math.PI*2);g.stroke();
+    });
+  }
+
+  function save(cvs,label){
+    var a=document.createElement('a');
+    a.download='sep_'+label.toLowerCase()+'_'+state.pol+'.png';
+    a.href=cvs.toDataURL('image/png');
+    document.body.appendChild(a);a.click();a.remove();
+  }
+
+  /* ---- controls ---- */
+  function seg(id,cb){
+    var el=document.getElementById(id);
+    el.addEventListener('click',function(e){
+      var b=e.target.closest('button');if(!b)return;
+      [].forEach.call(el.querySelectorAll('button'),function(x){x.setAttribute('aria-pressed',x===b);});
+      cb(b.getAttribute('data-v'));
+    });
+  }
+  seg('segK',function(v){state.useK=(v==='cmyk');separate();});      // changing K needs a re-split
+  seg('segPol',function(v){state.pol=v;render();});
+  seg('segView',function(v){state.view=v;render();});
+  document.getElementById('reg').addEventListener('change',function(e){state.reg=e.target.checked;render();});
+  document.getElementById('dlAll').addEventListener('click',function(){
+    var cvs=platesEl.querySelectorAll('canvas');var names=(state.useK?CH:CH.slice(0,3));
+    [].forEach.call(cvs,function(c,i){setTimeout(function(){save(c,names[i].name);},i*350);});
+  });
+})();
+</script>
+</body>
+</html>
