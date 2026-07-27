@@ -6,7 +6,7 @@ const SHELL = [
   "./", "index.html", "style.css", "manifest.json",
   "js/config.js", "js/db.js", "js/auth.js", "js/upload.js",
   "js/forecast.js", "js/feed.js", "js/collected.js",
-  "js/myprints.js", "js/router.js",
+  "js/myprints.js", "js/router.js", "js/cmyk.js",
   "assets/icon-192.png", "assets/icon-512.png"
 ];
 
