@@ -11,7 +11,7 @@ const Router = {
     edit:      (v, arg) => Mine.uploadForm(v, arg),
     collected: (v)      => Collected.render(v),
     negatives: (v)      => Negatives.render(v),
-    cmyk:      (v)      => cmyk.render(v),
+    cmyk:      (v)      => Separations.render(v),
     account:   (v)      => Mine.account(v)
   },
 
