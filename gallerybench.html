@@ -1,0 +1,1394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gallery Bench · The Cyanotype Network</title>
+<meta name="description" content="Square up and neutralize a photograph of a print. Everything stays on your device.">
+<style>
+/* ---- tokens: taken from the Network's style.css :root ---- */
+:root{
+  --ink:#14171a; --gray:#66757f; --faint:#8899a6;
+  --divider:#e6e2d8; --paper:#fcfbf7; --chip:#f6f4ee;
+  --prussian:#16385c; --prussian-deep:#0e2a47; --prussian-wash:#eef3f8;
+  --help:#8a5a1e; --help-bg:#faf3e6;
+  --live:#1f7a4d; --danger:#8a1e1e;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  background:var(--chip); color:var(--ink); font-size:16px; line-height:1.45;
+}
+.masthead{
+  font-family:Georgia,'Times New Roman',serif; letter-spacing:.06em; font-size:17px;
+  color:var(--prussian); padding:12px 14px 8px; background:var(--paper);
+  border-bottom:1px solid var(--divider);
+}
+.wrap{ max-width:600px; margin:0 auto; background:var(--paper);
+  border-left:1px solid var(--divider); border-right:1px solid var(--divider); min-height:100vh; }
+
+.page-head{ padding:14px; border-bottom:1px solid var(--divider); }
+.page-head h1{ font-size:18px; }
+.page-sub{ font-size:14px; color:var(--gray); margin-top:2px; }
+
+section{ padding:14px; border-bottom:1px solid var(--divider); }
+.step{ font-size:13px; color:var(--gray); font-variant:small-caps; letter-spacing:.04em; margin-bottom:10px; }
+.step b{ color:var(--prussian); font-weight:700; }
+
+/* ---- load ---- */
+.drop{
+  border:1px dashed var(--divider); border-radius:6px; background:var(--chip);
+  padding:28px 16px; text-align:center; color:var(--gray); font-size:15px; cursor:pointer;
+}
+.drop:hover,.drop.over{ border-color:var(--prussian); background:var(--prussian-wash); color:var(--ink); }
+.drop b{ color:var(--prussian); }
+input[type=file]{ display:none; }
+
+/* ---- filmstrip ---- */
+.strip{ display:flex; gap:8px; overflow-x:auto; padding-bottom:4px; }
+.strip figure{ position:relative; flex:0 0 auto; }
+.strip img{
+  width:60px; height:60px; object-fit:contain; display:block; border-radius:4px;
+  border:2px solid var(--divider); background:var(--prussian-wash); cursor:pointer;
+}
+.strip figure.active img{ border-color:var(--prussian); }
+.strip figure.done::after{
+  content:"✓"; position:absolute; right:2px; bottom:2px; font-size:11px; font-weight:700;
+  color:#fff; background:var(--live); border-radius:3px; padding:0 3px;
+}
+.strip button{
+  position:absolute; top:-4px; right:-4px; width:20px; height:20px; border-radius:50%;
+  border:1px solid var(--divider); background:var(--paper); color:var(--gray);
+  font:inherit; font-size:12px; line-height:1; cursor:pointer;
+}
+
+/* ---- stage ---- */
+.stage{
+  position:relative; background:var(--prussian-deep); border-radius:6px; padding:24px;
+  touch-action:none; user-select:none;
+}
+.stage canvas{ display:block; width:100%; height:auto; }
+.stage svg{ position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
+.handle{
+  position:absolute; width:44px; height:44px; margin:-22px 0 0 -22px; cursor:grab;
+  display:flex; align-items:center; justify-content:center;
+}
+.handle::after{
+  content:""; width:14px; height:14px; border-radius:50%;
+  border:2px solid #fff; background:rgba(22,56,92,.55); box-shadow:0 0 0 1px rgba(0,0,0,.4);
+}
+.handle.live::after{ background:#fff; border-color:var(--prussian); }
+.loupe{
+  position:absolute; width:112px; height:112px; border-radius:50%; overflow:hidden;
+  border:2px solid var(--paper); box-shadow:0 2px 10px rgba(0,0,0,.4);
+  pointer-events:none; display:none; z-index:5; background:var(--prussian-deep);
+}
+.loupe.on{ display:block; }
+.loupe canvas{ width:112px; height:112px; }
+.hint{ font-size:13px; color:var(--gray); margin-top:8px; }
+
+/* ---- result ---- */
+.result{ background:var(--chip); border:1px solid var(--divider); border-radius:6px; padding:10px; }
+.result canvas{ display:block; max-width:100%; height:auto; margin:0 auto; background:var(--paper); }
+.result.picking canvas{ cursor:crosshair; }
+
+/* ---- controls ---- */
+label.field{ display:block; font-size:13px; color:var(--gray); margin:10px 0 4px;
+  font-variant:small-caps; letter-spacing:.04em; }
+select,input[type=number]{
+  font:inherit; font-size:15px; width:100%; padding:9px 10px; min-height:44px;
+  border:1px solid var(--divider); border-radius:6px; background:var(--paper); color:var(--ink);
+}
+.two{ display:flex; gap:10px; }
+.two>div{ flex:1; }
+.btn{
+  font:inherit; font-size:15px; font-weight:600; width:100%; min-height:44px; padding:11px;
+  border-radius:6px; border:1px solid var(--prussian); background:var(--prussian); color:#fff; cursor:pointer;
+}
+.btn:disabled{ opacity:.45; cursor:default; }
+.btn.ghost{ background:transparent; color:var(--prussian); }
+.btn.ghost:disabled{ color:var(--gray); border-color:var(--divider); }
+.btnrow{ display:flex; gap:10px; margin-top:10px; }
+:focus-visible{ outline:2px solid var(--prussian); outline-offset:2px; }
+
+/* ---- readouts ---- */
+.swatch{ display:inline-block; width:22px; height:22px; border-radius:3px;
+  border:1px solid var(--divider); vertical-align:-6px; margin-right:8px; }
+.measure{ font-size:14px; }
+.measure div{ padding:7px 0; border-bottom:1px solid var(--divider); display:flex;
+  justify-content:space-between; align-items:center; gap:10px; }
+.measure div:last-child{ border-bottom:0; }
+.measure span.k{ color:var(--gray); font-variant:small-caps; letter-spacing:.04em; }
+.measure span.v{ font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:13px; }
+.note{ font-size:13px; color:var(--gray); margin-top:8px; }
+.pieces{ border:1px solid var(--divider); border-radius:6px; }
+.piece{ display:flex; gap:10px; align-items:center; padding:8px 10px; border-bottom:1px solid var(--divider); }
+.piece:last-child{ border-bottom:0; }
+.piece img{ width:38px; height:38px; object-fit:contain; background:var(--prussian-wash);
+  border-radius:3px; flex:0 0 auto; }
+.piece .nm{ flex:1 1 auto; min-width:0; font-size:13px; color:var(--gray);
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.piece select{ flex:0 0 auto; width:auto; max-width:46%; font-size:13px; min-height:38px; padding:6px 8px; }
+.warn{ font-size:13px; color:var(--help); background:var(--help-bg);
+  border:1px solid #eadfc8; border-radius:4px; padding:9px 10px; margin-top:10px; }
+.bar{ height:4px; background:var(--divider); border-radius:2px; overflow:hidden; margin-top:10px; display:none; }
+.bar.on{ display:block; }
+.bar i{ display:block; height:100%; width:0; background:var(--prussian); transition:width .12s linear; }
+.hide{ display:none !important; }
+@media (prefers-reduced-motion:reduce){ *{ transition:none !important; } }
+</style>
+</head>
+<body>
+
+<div class="masthead">GALLERY BENCH</div>
+<script>
+/* Hide the masthead when embedded in the app shell, matching negatives.html. */
+if (window.self !== window.top) {
+  var _m = document.querySelector('.masthead');
+  if (_m) _m.style.display = 'none';
+  document.body.style.background = 'transparent';
+}
+</script>
+
+<div class="wrap">
+
+  <div class="page-head">
+    <h1>Gallery Bench</h1>
+    <div class="page-sub">Square up a photo of a print and neutralize its paper. Nothing leaves your device.</div>
+  </div>
+
+  <!-- 1 · LOAD -->
+  <section>
+    <div class="step"><b>1</b> · Load</div>
+    <div class="drop" id="drop" role="button" tabindex="0">
+      Tap to choose photos, or drop them here.<br>
+      <b>JPEG, PNG, HEIC</b> — as many prints as you like.
+    </div>
+    <input type="file" id="file" accept="image/*" multiple>
+    <div class="strip hide" id="strip" style="margin-top:12px"></div>
+  </section>
+
+  <!-- 2 · SQUARE -->
+  <section id="secSquare" class="hide">
+    <div class="step"><b>2</b> · Square</div>
+    <div class="stage" id="stage">
+      <canvas id="cv"></canvas>
+      <svg id="ov" preserveAspectRatio="none"><polygon id="poly"
+        fill="rgba(238,243,248,.14)" stroke="#fff" stroke-width="1.5" vector-effect="non-scaling-stroke"></polygon></svg>
+      <div class="loupe" id="loupe"><canvas id="lcv" width="112" height="112"></canvas></div>
+    </div>
+    <div class="hint">Drag each marker onto a corner of the paper. The loupe shows what sits under your finger.</div>
+    <div class="btnrow">
+      <button class="btn ghost" id="btnReset">Reset to full frame</button>
+    </div>
+
+    <label class="field" for="aspect">Paper size</label>
+    <select id="aspect">
+      <option value="auto">Estimate from the corners</option>
+      <option value="8x8">8 × 8 in</option>
+      <option value="8x10">8 × 10 in</option>
+      <option value="9x12">9 × 12 in</option>
+      <option value="11x14">11 × 14 in</option>
+      <option value="8.27x11.69">A4</option>
+      <option value="11.69x16.54">A3</option>
+      <option value="10x8">10 × 8 in (landscape)</option>
+      <option value="14x11">14 × 11 in (landscape)</option>
+      <option value="11.69x8.27">A4 (landscape)</option>
+    </select>
+    <div class="note">Estimating from the corners bakes the camera's foreshortening into the result. Naming the sheet also lets the wall hang these at their true relative sizes.</div>
+  </section>
+
+  <!-- 3 · NEUTRALIZE -->
+  <section id="secColor" class="hide">
+    <div class="step"><b>3</b> · Neutralize</div>
+    <div class="result" id="result"><canvas id="rcv"></canvas></div>
+    <div class="btnrow">
+      <button class="btn ghost" id="btnPick">Pick paper white</button>
+      <button class="btn ghost" id="btnClearWB" disabled>Clear</button>
+    </div>
+    <div class="note" id="wbNote">Tap an unexposed margin — bare paper, no image. Everything is measured from that patch.</div>
+    <div class="warn">
+      Nothing here adjusts contrast, saturation, or sharpness. On a cyanotype the blue is the
+      subject, and automatic correction reads it as a cast to remove.
+    </div>
+  </section>
+
+  <!-- 4 · MEASURE -->
+  <section id="secMeasure" class="hide">
+    <div class="step"><b>4</b> · Measured</div>
+    <div class="measure" id="measure"></div>
+    <div class="btnrow"><button class="btn ghost" id="btnCopy">Copy for a field report</button></div>
+  </section>
+
+  <!-- 5 · EXPORT -->
+  <section id="secExport" class="hide">
+    <div class="step"><b>5</b> · Export</div>
+    <div class="two">
+      <div>
+        <label class="field" for="longEdge">Long edge</label>
+        <input type="number" id="longEdge" value="4000" min="600" max="8000" step="100">
+      </div>
+      <div>
+        <label class="field" for="quality">JPEG quality</label>
+        <input type="number" id="quality" value="95" min="60" max="100" step="1">
+      </div>
+    </div>
+    <div class="btnrow"><button class="btn" id="btnExport">Export corrected files</button></div>
+    <div class="bar" id="bar"><i id="barFill"></i></div>
+    <div class="note" id="exportNote"></div>
+    <div class="btnrow hide" id="manifestRow">
+      <button class="btn ghost" id="btnManifest">Download manifest</button>
+    </div>
+  </section>
+
+  <!-- 6 · HANG -->
+  <section id="secHang" class="hide">
+    <div class="step"><b>6</b> · Hang</div>
+    <div class="result"><canvas id="wcv"></canvas></div>
+
+    <div class="two">
+      <div>
+        <label class="field" for="wallShape">Wall shape</label>
+        <select id="wallShape">
+          <option value="1.5">3 : 2</option>
+          <option value="1.3333" selected>4 : 3</option>
+          <option value="1">Square</option>
+          <option value="1.7778">16 : 9</option>
+        </select>
+      </div>
+      <div>
+        <label class="field" for="rows">Rows</label>
+        <select id="rows">
+          <option value="0" selected>Auto</option>
+          <option value="1">One line</option>
+          <option value="2">Two</option>
+          <option value="3">Three</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="two">
+      <div>
+        <label class="field" for="scaleMode">Scale</label>
+        <select id="scaleMode">
+          <option value="true" selected>True relative size</option>
+          <option value="even">Even visual weight</option>
+        </select>
+      </div>
+      <div>
+        <label class="field" for="matWidth">Mat</label>
+        <select id="matWidth">
+          <option value="none">No mat</option>
+          <option value="s">Narrow — 1.5 in</option>
+          <option value="m" selected>Standard — 2 in</option>
+          <option value="l">Wide — 3 in</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="two">
+      <div>
+        <label class="field" for="matColor">Mat board</label>
+        <select id="matColor">
+          <option value="white" selected>Bright white</option>
+          <option value="cream">Off-white</option>
+          <option value="grey">Warm grey</option>
+        </select>
+      </div>
+      <div>
+        <label class="field" for="frameColor">Frame finish</label>
+        <select id="frameColor">
+          <option value="black" selected>Black</option>
+          <option value="oak">Natural oak</option>
+          <option value="white">White</option>
+          <option value="walnut">Walnut</option>
+        </select>
+      </div>
+    </div>
+
+    <label class="field" for="frameWidth">Frame</label>
+    <select id="frameWidth">
+      <option value="none">No frame</option>
+      <option value="thin">Thin — 0.25 in</option>
+      <option value="std" selected>Standard — 0.5 in</option>
+      <option value="wide">Wide — 0.9 in</option>
+    </select>
+
+    <label class="field" for="spacing">Space between works — <span id="spacingVal">4</span> in</label>
+    <input type="range" id="spacing" min="1" max="12" step="0.5" value="4" style="width:100%">
+
+    <label class="field">Individual pieces</label>
+    <div class="pieces" id="pieces"></div>
+
+    <div class="note" id="hangNote"></div>
+    <div class="btnrow">
+      <button class="btn" id="btnWall">Export gallery wall</button>
+    </div>
+    <div class="bar" id="wbar"><i id="wbarFill"></i></div>
+  </section>
+
+</div>
+
+<!-- ============ export worker ============ -->
+<script id="workerSrc" type="text/js-worker">
+function solve8(A, b){
+  var n = 8, i, j, k;
+  for (i = 0; i < n; i++){
+    var piv = i;
+    for (j = i + 1; j < n; j++) if (Math.abs(A[j][i]) > Math.abs(A[piv][i])) piv = j;
+    var t = A[i]; A[i] = A[piv]; A[piv] = t;
+    var tb = b[i]; b[i] = b[piv]; b[piv] = tb;
+    var d = A[i][i];
+    if (Math.abs(d) < 1e-12) throw new Error("Those corners do not form a usable quadrilateral.");
+    for (j = i; j < n; j++) A[i][j] /= d;
+    b[i] /= d;
+    for (k = 0; k < n; k++){
+      if (k === i) continue;
+      var f = A[k][i];
+      if (!f) continue;
+      for (j = i; j < n; j++) A[k][j] -= f * A[i][j];
+      b[k] -= f * b[i];
+    }
+  }
+  return b;
+}
+
+/* Homography mapping DESTINATION pixels back to SOURCE pixels, so no inversion is needed.
+   dst corners are the output rectangle; src corners are the four picked points.
+   Order throughout is top-left, top-right, bottom-right, bottom-left. */
+function destToSrc(src, W, H){
+  var dst = [[0,0],[W,0],[W,H],[0,H]];
+  var A = [], b = [];
+  for (var i = 0; i < 4; i++){
+    var u = dst[i][0], v = dst[i][1], x = src[i][0], y = src[i][1];
+    A.push([u, v, 1, 0, 0, 0, -u * x, -v * x]); b.push(x);
+    A.push([0, 0, 0, u, v, 1, -u * y, -v * y]); b.push(y);
+  }
+  return solve8(A, b);
+}
+
+self.onmessage = async function(e){
+  var job = e.data;
+  try {
+    var bmp = await createImageBitmap(job.file, { imageOrientation: "from-image" });
+
+    // Bound the decode. A 48MP phone photo is ~190MB as RGBA and will kill a mobile tab.
+    var scale = Math.min(1, job.maxDecode / Math.max(bmp.width, bmp.height));
+    if (scale < 1){
+      var small = await createImageBitmap(bmp, {
+        resizeWidth: Math.round(bmp.width * scale),
+        resizeHeight: Math.round(bmp.height * scale),
+        resizeQuality: "high"
+      });
+      bmp.close();
+      bmp = small;
+    }
+
+    var sw = bmp.width, sh = bmp.height;
+    var sc = new OffscreenCanvas(sw, sh);
+    var sctx = sc.getContext("2d", { willReadFrequently: true });
+    sctx.drawImage(bmp, 0, 0);
+    bmp.close();
+    var src = sctx.getImageData(0, 0, sw, sh).data;
+
+    var W = job.W, H = job.H;
+    var pts = job.quad.map(function(p){ return [p[0] * sw, p[1] * sh]; });
+    var h = destToSrc(pts, W, H);
+    var a = h[0], bb = h[1], c = h[2], d = h[3], ee = h[4], f = h[5], g = h[6], hh = h[7];
+
+    // Channel lookup tables for the paper-white correction.
+    var lut = null;
+    if (job.wb){
+      lut = [new Uint8Array(256), new Uint8Array(256), new Uint8Array(256)];
+      for (var ch = 0; ch < 3; ch++)
+        for (var v = 0; v < 256; v++)
+          lut[ch][v] = Math.max(0, Math.min(255, Math.round(v * job.wb[ch])));
+    }
+
+    var out = new OffscreenCanvas(W, H);
+    var octx = out.getContext("2d");
+    var BAND = 128;
+
+    for (var y0 = 0; y0 < H; y0 += BAND){
+      var bh = Math.min(BAND, H - y0);
+      var band = octx.createImageData(W, bh);
+      var o = band.data;
+
+      for (var yy = 0; yy < bh; yy++){
+        var vy = y0 + yy + 0.5;
+        for (var xx = 0; xx < W; xx++){
+          var ux = xx + 0.5;
+          var den = g * ux + hh * vy + 1;
+          var fx = (a * ux + bb * vy + c) / den;
+          var fy = (d * ux + ee * vy + f) / den;
+          var di = (yy * W + xx) * 4;
+
+          if (fx < 0 || fy < 0 || fx > sw - 1 || fy > sh - 1){
+            o[di] = 255; o[di+1] = 255; o[di+2] = 255; o[di+3] = 255;
+            continue;
+          }
+
+          var x0 = fx | 0, y1 = fy | 0;
+          var tx = fx - x0, ty = fy - y1;
+          var x1 = x0 + 1 < sw ? x0 + 1 : x0;
+          var y2 = y1 + 1 < sh ? y1 + 1 : y1;
+          var i00 = (y1 * sw + x0) * 4, i10 = (y1 * sw + x1) * 4;
+          var i01 = (y2 * sw + x0) * 4, i11 = (y2 * sw + x1) * 4;
+          var w00 = (1-tx)*(1-ty), w10 = tx*(1-ty), w01 = (1-tx)*ty, w11 = tx*ty;
+
+          for (var k = 0; k < 3; k++){
+            var val = src[i00+k]*w00 + src[i10+k]*w10 + src[i01+k]*w01 + src[i11+k]*w11;
+            var iv = val < 0 ? 0 : val > 255 ? 255 : val | 0;
+            o[di+k] = lut ? lut[k][iv] : iv;
+          }
+          o[di+3] = 255;
+        }
+      }
+
+      octx.putImageData(band, 0, y0);
+      self.postMessage({ progress: (y0 + bh) / H });
+      await new Promise(function(r){ setTimeout(r, 0); });
+    }
+
+    var blob = await out.convertToBlob({ type: "image/jpeg", quality: job.quality });
+    self.postMessage({ done: true, blob: blob, outW: W, outH: H, decodedW: sw, decodedH: sh });
+  } catch (err) {
+    self.postMessage({ error: String(err && err.message ? err.message : err) });
+  }
+};
+</script>
+
+<script>
+"use strict";
+
+var PREVIEW_MAX = 1400;   // interactive working size
+var MAX_DECODE  = 4600;   // ceiling for the full-res pass in the worker
+var LOUPE_ZOOM  = 4;
+
+var items = [], active = -1, worker = null, manifest = null;
+var picking = false, dragging = null;
+
+var $ = function(id){ return document.getElementById(id); };
+var cv = $("cv"), ctx = cv.getContext("2d");
+var rcv = $("rcv"), rctx = rcv.getContext("2d", { willReadFrequently: true });
+var lcv = $("lcv"), lctx = lcv.getContext("2d");
+
+/* ---------------- loading ---------------- */
+
+$("drop").onclick = function(){ $("file").click(); };
+$("drop").onkeydown = function(e){ if (e.key === "Enter" || e.key === " ") { e.preventDefault(); $("file").click(); } };
+$("file").onchange = function(e){ add(e.target.files); e.target.value = ""; };
+
+["dragenter","dragover"].forEach(function(t){
+  $("drop").addEventListener(t, function(e){ e.preventDefault(); $("drop").classList.add("over"); });
+});
+["dragleave","drop"].forEach(function(t){
+  $("drop").addEventListener(t, function(e){ e.preventDefault(); $("drop").classList.remove("over"); });
+});
+$("drop").addEventListener("drop", function(e){ add(e.dataTransfer.files); });
+
+async function add(fileList){
+  var files = Array.prototype.slice.call(fileList).filter(function(f){ return /^image\//.test(f.type); });
+  for (var i = 0; i < files.length; i++){
+    var f = files[i];
+    try {
+      var full = await createImageBitmap(f, { imageOrientation: "from-image" });
+      var s = Math.min(1, PREVIEW_MAX / Math.max(full.width, full.height));
+      var prev = s < 1
+        ? await createImageBitmap(full, {
+            resizeWidth: Math.round(full.width * s),
+            resizeHeight: Math.round(full.height * s),
+            resizeQuality: "high" })
+        : full;
+      if (prev !== full) full.close();
+
+      items.push({
+        file: f,
+        name: f.name,
+        bmp: prev,
+        srcW: prev.width, srcH: prev.height,
+        quad: [[0,0],[1,0],[1,1],[0,1]],   // full frame, normalized 0–1
+        paper: "auto", mount: "default", wb: null, paperRGB: null, exported: false
+      });
+    } catch (err) {
+      note("Could not read " + f.name + ". Try exporting it as JPEG first.");
+    }
+  }
+  if (items.length && active < 0) active = 0;
+  drawStrip();
+  showStages();
+  select(active);
+  drawPieces();
+}
+
+function drawStrip(){
+  var strip = $("strip");
+  strip.classList.toggle("hide", !items.length);
+  strip.innerHTML = "";
+  items.forEach(function(it, i){
+    var fig = document.createElement("figure");
+    fig.className = (i === active ? "active " : "") + (it.exported ? "done" : "");
+    var c = document.createElement("canvas");
+    c.width = c.height = 120;
+    var g = c.getContext("2d");
+    g.fillStyle = "#eef3f8"; g.fillRect(0, 0, 120, 120);
+    var sc = Math.min(120 / it.srcW, 120 / it.srcH);
+    var w = it.srcW * sc, h = it.srcH * sc;
+    g.drawImage(it.bmp, (120 - w) / 2, (120 - h) / 2, w, h);
+    it.thumb = c.toDataURL("image/jpeg", 0.7);
+    var img = document.createElement("img");
+    img.src = it.thumb;
+    img.alt = it.name;
+    img.onclick = function(){ select(i); };
+    var rm = document.createElement("button");
+    rm.textContent = "×";
+    rm.title = "Remove " + it.name;
+    rm.onclick = function(ev){ ev.stopPropagation(); remove(i); };
+    fig.appendChild(img); fig.appendChild(rm);
+    strip.appendChild(fig);
+  });
+}
+
+function remove(i){
+  items[i].bmp.close();
+  items.splice(i, 1);
+  if (active >= items.length) active = items.length - 1;
+  drawStrip(); showStages();
+  if (active >= 0) select(active); else clearStage();
+  drawPieces();
+}
+
+function showStages(){
+  var on = items.length > 0;
+  ["secSquare","secColor","secMeasure","secExport","secHang"].forEach(function(id){
+    $(id).classList.toggle("hide", !on);
+  });
+}
+
+function clearStage(){
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  rctx.clearRect(0, 0, rcv.width, rcv.height);
+  $("measure").innerHTML = "";
+}
+
+function select(i){
+  if (i < 0 || i >= items.length) return;
+  active = i;
+  drawStrip();
+  var it = items[i];
+  cv.width = it.srcW; cv.height = it.srcH;
+  ctx.drawImage(it.bmp, 0, 0);
+  $("ov").setAttribute("viewBox", "0 0 " + it.srcW + " " + it.srcH);
+  buildHandles();
+  syncWBButtons();
+  $("aspect").value = it.paper;
+  rectify();
+}
+
+/* ---------------- corner handles ---------------- */
+
+function buildHandles(){
+  Array.prototype.slice.call(document.querySelectorAll(".handle")).forEach(function(h){ h.remove(); });
+  var it = items[active];
+  it.quad.forEach(function(_, idx){
+    var h = document.createElement("div");
+    h.className = "handle";
+    h.dataset.i = idx;
+    h.setAttribute("role", "slider");
+    h.setAttribute("aria-label", ["Top left","Top right","Bottom right","Bottom left"][idx] + " corner");
+    h.tabIndex = 0;
+    h.addEventListener("pointerdown", onDown);
+    h.addEventListener("keydown", onKey);
+    $("stage").appendChild(h);
+  });
+  placeHandles();
+}
+
+function placeHandles(){
+  var it = items[active];
+  var r = cv.getBoundingClientRect(), sr = $("stage").getBoundingClientRect();
+  var ox = r.left - sr.left, oy = r.top - sr.top;
+  document.querySelectorAll(".handle").forEach(function(h){
+    var p = it.quad[+h.dataset.i];
+    h.style.left = (ox + p[0] * r.width) + "px";
+    h.style.top  = (oy + p[1] * r.height) + "px";
+  });
+  $("poly").setAttribute("points", it.quad.map(function(p){
+    return (p[0] * it.srcW) + "," + (p[1] * it.srcH);
+  }).join(" "));
+}
+
+function onDown(e){
+  dragging = this;
+  this.classList.add("live");
+  this.setPointerCapture(e.pointerId);
+  this.addEventListener("pointermove", onMove);
+  this.addEventListener("pointerup", onUp);
+  this.addEventListener("pointercancel", onUp);
+  onMove(e);
+}
+
+function onMove(e){
+  if (!dragging) return;
+  e.preventDefault();
+  var it = items[active];
+  var r = cv.getBoundingClientRect();
+  var nx = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+  var ny = Math.max(0, Math.min(1, (e.clientY - r.top)  / r.height));
+  it.quad[+dragging.dataset.i] = [nx, ny];
+  placeHandles();
+  showLoupe(nx, ny, e.clientY - r.top < r.height * 0.35);
+  scheduleRectify();
+}
+
+function onUp(e){
+  if (!dragging) return;
+  dragging.classList.remove("live");
+  dragging.removeEventListener("pointermove", onMove);
+  dragging.removeEventListener("pointerup", onUp);
+  dragging.removeEventListener("pointercancel", onUp);
+  dragging = null;
+  $("loupe").classList.remove("on");
+  rectify();
+  drawWall();
+}
+
+function onKey(e){
+  var step = e.shiftKey ? 0.01 : 0.002;
+  var d = { ArrowLeft:[-step,0], ArrowRight:[step,0], ArrowUp:[0,-step], ArrowDown:[0,step] }[e.key];
+  if (!d) return;
+  e.preventDefault();
+  var it = items[active], p = it.quad[+this.dataset.i];
+  it.quad[+this.dataset.i] = [
+    Math.max(0, Math.min(1, p[0] + d[0])),
+    Math.max(0, Math.min(1, p[1] + d[1]))
+  ];
+  placeHandles();
+  rectify();
+}
+
+function showLoupe(nx, ny, below){
+  var it = items[active];
+  var sx = nx * it.srcW, sy = ny * it.srcH, half = 112 / (2 * LOUPE_ZOOM);
+  lctx.imageSmoothingEnabled = false;
+  lctx.clearRect(0, 0, 112, 112);
+  lctx.drawImage(it.bmp, sx - half, sy - half, half * 2, half * 2, 0, 0, 112, 112);
+  lctx.strokeStyle = "rgba(255,255,255,.9)";
+  lctx.lineWidth = 1;
+  lctx.beginPath();
+  lctx.moveTo(56, 44); lctx.lineTo(56, 68);
+  lctx.moveTo(44, 56); lctx.lineTo(68, 56);
+  lctx.stroke();
+
+  var r = cv.getBoundingClientRect(), sr = $("stage").getBoundingClientRect();
+  var ox = r.left - sr.left, oy = r.top - sr.top;
+  var lp = $("loupe");
+  lp.style.left = Math.max(4, Math.min(sr.width - 116, ox + nx * r.width - 56)) + "px";
+  lp.style.top  = (below ? oy + ny * r.height + 40 : oy + ny * r.height - 168) + "px";
+  lp.classList.add("on");
+}
+
+$("btnReset").onclick = function(){
+  items[active].quad = [[0,0],[1,0],[1,1],[0,1]];
+  placeHandles(); rectify();
+};
+$("aspect").onchange = function(){
+  if (active >= 0) items[active].paper = this.value;
+  rectify();
+  drawWall();
+};
+window.addEventListener("resize", function(){ if (active >= 0) placeHandles(); });
+
+/* ---------------- rectified preview ---------------- */
+
+var pending = false;
+function scheduleRectify(){
+  if (pending) return;
+  pending = true;
+  requestAnimationFrame(function(){ pending = false; rectify(); });
+}
+
+function solve8(A, b){
+  var n = 8, i, j, k;
+  for (i = 0; i < n; i++){
+    var piv = i;
+    for (j = i + 1; j < n; j++) if (Math.abs(A[j][i]) > Math.abs(A[piv][i])) piv = j;
+    var t = A[i]; A[i] = A[piv]; A[piv] = t;
+    var tb = b[i]; b[i] = b[piv]; b[piv] = tb;
+    var d = A[i][i];
+    if (Math.abs(d) < 1e-12) return null;
+    for (j = i; j < n; j++) A[i][j] /= d;
+    b[i] /= d;
+    for (k = 0; k < n; k++){
+      if (k === i) continue;
+      var f = A[k][i];
+      if (!f) continue;
+      for (j = i; j < n; j++) A[k][j] -= f * A[i][j];
+      b[k] -= f * b[i];
+    }
+  }
+  return b;
+}
+
+function destToSrc(src, W, H){
+  var dst = [[0,0],[W,0],[W,H],[0,H]], A = [], b = [];
+  for (var i = 0; i < 4; i++){
+    var u = dst[i][0], v = dst[i][1], x = src[i][0], y = src[i][1];
+    A.push([u, v, 1, 0, 0, 0, -u * x, -v * x]); b.push(x);
+    A.push([0, 0, 0, u, v, 1, -u * y, -v * y]); b.push(y);
+  }
+  return solve8(A, b);
+}
+
+/* Real sheet dimensions in inches, or null when estimating from the corners. */
+function paperSize(it){
+  if (!it.paper || it.paper === "auto") return null;
+  var m = it.paper.split("x");
+  return { w: parseFloat(m[0]), h: parseFloat(m[1]) };
+}
+
+function outputAspect(it){
+  var p = paperSize(it);
+  if (p) return p.w / p.h;
+  var p = it.quad.map(function(q){ return [q[0] * it.srcW, q[1] * it.srcH]; });
+  var dist = function(a, b){ return Math.hypot(a[0]-b[0], a[1]-b[1]); };
+  var w = (dist(p[0],p[1]) + dist(p[3],p[2])) / 2;
+  var h = (dist(p[0],p[3]) + dist(p[1],p[2])) / 2;
+  return h > 0 ? w / h : 1;
+}
+
+function outputSize(it, longEdge){
+  var ar = outputAspect(it);
+  return ar >= 1
+    ? { W: longEdge, H: Math.max(1, Math.round(longEdge / ar)) }
+    : { W: Math.max(1, Math.round(longEdge * ar)), H: longEdge };
+}
+
+/* Rectify one work into a fresh canvas at W x H. Shared by the preview,
+   the wall preview, and nothing else — the export path runs in the worker. */
+function renderRect(it, W, H){
+  var sc = document.createElement("canvas");
+  sc.width = it.srcW; sc.height = it.srcH;
+  sc.getContext("2d").drawImage(it.bmp, 0, 0);
+  var src = sc.getContext("2d").getImageData(0, 0, it.srcW, it.srcH).data;
+
+  var pts = it.quad.map(function(p){ return [p[0] * it.srcW, p[1] * it.srcH]; });
+  var h = destToSrc(pts, W, H);
+  if (!h) return null;
+
+  var lut = null;
+  if (it.wb){
+    lut = [new Uint8Array(256), new Uint8Array(256), new Uint8Array(256)];
+    for (var ch = 0; ch < 3; ch++)
+      for (var v = 0; v < 256; v++)
+        lut[ch][v] = Math.max(0, Math.min(255, Math.round(v * it.wb[ch])));
+  }
+
+  var img = new ImageData(W, H), o = img.data;
+  var sw = it.srcW, sh = it.srcH;
+  var a=h[0], b2=h[1], c=h[2], d=h[3], e=h[4], f=h[5], g=h[6], hh=h[7];
+
+  for (var y = 0; y < H; y++){
+    var vy = y + 0.5;
+    for (var x = 0; x < W; x++){
+      var ux = x + 0.5;
+      var den = g*ux + hh*vy + 1;
+      var fx = (a*ux + b2*vy + c) / den, fy = (d*ux + e*vy + f) / den;
+      var di = (y*W + x) * 4;
+      if (fx < 0 || fy < 0 || fx > sw-1 || fy > sh-1){
+        o[di]=255; o[di+1]=255; o[di+2]=255; o[di+3]=255; continue;
+      }
+      var x0 = fx|0, y0 = fy|0, tx = fx-x0, ty = fy-y0;
+      var x1 = x0+1 < sw ? x0+1 : x0, y1 = y0+1 < sh ? y0+1 : y0;
+      var i00=(y0*sw+x0)*4, i10=(y0*sw+x1)*4, i01=(y1*sw+x0)*4, i11=(y1*sw+x1)*4;
+      var w00=(1-tx)*(1-ty), w10=tx*(1-ty), w01=(1-tx)*ty, w11=tx*ty;
+      for (var k = 0; k < 3; k++){
+        var val = src[i00+k]*w00 + src[i10+k]*w10 + src[i01+k]*w01 + src[i11+k]*w11;
+        var iv = val < 0 ? 0 : val > 255 ? 255 : val|0;
+        o[di+k] = lut ? lut[k][iv] : iv;
+      }
+      o[di+3] = 255;
+    }
+  }
+  var out = document.createElement("canvas");
+  out.width = W; out.height = H;
+  out.getContext("2d").putImageData(img, 0, 0);
+  return { canvas: out, imageData: img };
+}
+
+function rectify(){
+  if (active < 0) return;
+  var it = items[active];
+  var dim = outputSize(it, 520);
+  rcv.width = dim.W; rcv.height = dim.H;
+  var r = renderRect(it, dim.W, dim.H);
+  if (!r) return;
+  rctx.drawImage(r.canvas, 0, 0);
+  measure(r.imageData);
+  if (!dragging) drawWall();
+}
+
+/* ---------------- paper white ---------------- */
+
+$("btnPick").onclick = function(){
+  picking = !picking;
+  $("result").classList.toggle("picking", picking);
+  this.textContent = picking ? "Cancel" : "Pick paper white";
+  $("wbNote").textContent = picking
+    ? "Tap the bare paper margin in the preview above."
+    : "Tap an unexposed margin — bare paper, no image. Everything is measured from that patch.";
+};
+
+rcv.addEventListener("click", function(e){
+  if (!picking) return;
+  var r = rcv.getBoundingClientRect();
+  var x = Math.round((e.clientX - r.left) / r.width * rcv.width);
+  var y = Math.round((e.clientY - r.top) / r.height * rcv.height);
+  var half = 4, sum = [0,0,0], n = 0;
+  var d = rctx.getImageData(
+    Math.max(0, x-half), Math.max(0, y-half),
+    Math.min(9, rcv.width - Math.max(0, x-half)),
+    Math.min(9, rcv.height - Math.max(0, y-half))).data;
+  for (var i = 0; i < d.length; i += 4){ sum[0]+=d[i]; sum[1]+=d[i+1]; sum[2]+=d[i+2]; n++; }
+  var mean = [sum[0]/n, sum[1]/n, sum[2]/n];
+  var target = (mean[0] + mean[1] + mean[2]) / 3;
+
+  var it = items[active];
+  var base = it.wb || [1,1,1];
+  it.wb = mean.map(function(m, i){
+    var mult = m > 0 ? base[i] * (target / m) : base[i];
+    return Math.max(0.85, Math.min(1.15, mult));   // same cap as the CLI
+  });
+  it.paperRGB = mean.map(Math.round);
+
+  picking = false;
+  $("result").classList.remove("picking");
+  $("btnPick").textContent = "Pick paper white";
+  syncWBButtons();
+  rectify();
+  $("wbNote").textContent = "Corrected from a patch reading " +
+    it.paperRGB.join(", ") + ". Pick again to refine, or clear to undo.";
+});
+
+$("btnClearWB").onclick = function(){
+  var it = items[active];
+  it.wb = null; it.paperRGB = null;
+  syncWBButtons(); rectify();
+  $("wbNote").textContent = "Tap an unexposed margin — bare paper, no image. Everything is measured from that patch.";
+};
+
+function syncWBButtons(){
+  var it = items[active];
+  $("btnClearWB").disabled = !(it && it.wb);
+}
+
+/* ---------------- measurement ---------------- */
+
+var lastMeasure = null;
+
+function measure(img){
+  var d = img.data, n = d.length / 4;
+  var lum = new Float32Array(n), i, p;
+  for (i = 0; i < n; i++){
+    p = i * 4;
+    lum[i] = 0.2126*d[p] + 0.7152*d[p+1] + 0.0722*d[p+2];
+  }
+  var idx = Array.from(lum.keys());
+  idx.sort(function(a, b){ return lum[a] - lum[b]; });
+
+  var take = Math.max(1, Math.round(n * 0.005));
+  var dk = [0,0,0], lt = [0,0,0];
+  for (i = 0; i < take; i++){
+    p = idx[i] * 4;              dk[0]+=d[p]; dk[1]+=d[p+1]; dk[2]+=d[p+2];
+    p = idx[n-1-i] * 4;          lt[0]+=d[p]; lt[1]+=d[p+1]; lt[2]+=d[p+2];
+  }
+  dk = dk.map(function(v){ return Math.round(v / take); });
+  lt = lt.map(function(v){ return Math.round(v / take); });
+
+  var hue = Math.round(rgbHue(dk[0], dk[1], dk[2]));
+  var it = items[active];
+  lastMeasure = {
+    file: it.name,
+    paper_white: it.paperRGB || lt,
+    max_density: dk,
+    hue_deg: hue,
+    output: outputSize(it, parseInt($("longEdge").value, 10) || 4000)
+  };
+
+  $("measure").innerHTML =
+    row("paper white", swatch(lt) + lt.join(", ")) +
+    row("max density", swatch(dk) + dk.join(", ")) +
+    row("hue angle", hue + "°") +
+    row("output", lastMeasure.output.W + " × " + lastMeasure.output.H + " px");
+}
+
+function row(k, v){ return '<div><span class="k">' + k + '</span><span class="v">' + v + "</span></div>"; }
+function swatch(c){ return '<span class="swatch" style="background:rgb(' + c.join(",") + ')"></span>'; }
+
+function rgbHue(r, g, b){
+  r/=255; g/=255; b/=255;
+  var mx = Math.max(r,g,b), mn = Math.min(r,g,b), c = mx - mn;
+  if (!c) return 0;
+  var h = mx === r ? ((g-b)/c) % 6 : mx === g ? (b-r)/c + 2 : (r-g)/c + 4;
+  h *= 60;
+  return h < 0 ? h + 360 : h;
+}
+
+$("btnCopy").onclick = async function(){
+  if (!lastMeasure) return;
+  var t = "Paper white " + lastMeasure.paper_white.join(",") +
+          " · Max density " + lastMeasure.max_density.join(",") +
+          " · Hue " + lastMeasure.hue_deg + "°";
+  try { await navigator.clipboard.writeText(t); this.textContent = "Copied"; }
+  catch (e) { this.textContent = "Copy failed — select it manually"; }
+  var b = this;
+  setTimeout(function(){ b.textContent = "Copy for a field report"; }, 1800);
+};
+
+/* ---------------- export ---------------- */
+
+$("btnExport").onclick = async function(){
+  var btn = this;
+  btn.disabled = true;
+  $("bar").classList.add("on");
+  manifest = { tool: "gallerybench", command: "correct",
+    preservation_note: "Only explicit deterministic operations were applied; original files were not modified.",
+    items: [] };
+
+  var longEdge = Math.max(600, Math.min(8000, parseInt($("longEdge").value, 10) || 4000));
+  var q = Math.max(60, Math.min(100, parseInt($("quality").value, 10) || 95)) / 100;
+
+  for (var i = 0; i < items.length; i++){
+    var it = items[i];
+    note("Working on " + it.name + " — " + (i + 1) + " of " + items.length + ".");
+    var dim = outputSize(it, longEdge);
+    try {
+      var res = await runWorker({
+        file: it.file, quad: it.quad, W: dim.W, H: dim.H,
+        wb: it.wb, quality: q, maxDecode: MAX_DECODE
+      });
+      var blob = await withDPI(res.blob, 300);
+      download(blob, baseName(it.name) + "_corrected.jpg");
+      it.exported = true;
+      manifest.items.push({
+        source_file: it.name,
+        source_size: [res.decodedW, res.decodedH],
+        output_file: baseName(it.name) + "_corrected.jpg",
+        output_format: "JPEG",
+        output_size: [res.outW, res.outH],
+        operations: buildOps(it),
+        source_preserved: true
+      });
+    } catch (err) {
+      note("Stopped on " + it.name + ": " + err.message);
+      break;
+    }
+  }
+
+  $("bar").classList.remove("on");
+  $("barFill").style.width = "0%";
+  btn.disabled = false;
+  drawStrip();
+  if (manifest.items.length){
+    $("manifestRow").classList.remove("hide");
+    note("Exported " + manifest.items.length + " of " + items.length + ".");
+  }
+};
+
+function buildOps(it){
+  var ops = [{ operation: "normalize_exif_orientation" },
+             { operation: "perspective_rectify",
+               quad_order: "top-left, top-right, bottom-right, bottom-left",
+               quad_normalized: it.quad }];
+  if (it.wb) ops.push({ operation: "paper_white_balance",
+    multipliers: it.wb.map(function(v){ return Math.round(v * 1e5) / 1e5; }),
+    sampled_rgb: it.paperRGB });
+  return ops;
+}
+
+function runWorker(job){
+  return new Promise(function(resolve, reject){
+    if (worker) worker.terminate();
+    var src = document.getElementById("workerSrc").textContent;
+    worker = new Worker(URL.createObjectURL(new Blob([src], { type: "text/javascript" })));
+    worker.onmessage = function(e){
+      if (e.data.progress != null) $("barFill").style.width = Math.round(e.data.progress * 100) + "%";
+      else if (e.data.error) reject(new Error(e.data.error));
+      else if (e.data.done) resolve(e.data);
+    };
+    worker.onerror = function(){ reject(new Error("The export worker failed. Try a smaller long edge.")); };
+    worker.postMessage(job);
+  });
+}
+
+/* Canvas encoders write no DPI. Patch the JFIF APP0 density fields so the file
+   reports 300 dpi to anything that reads it. */
+function withDPI(blob, dpi){
+  return blob.arrayBuffer().then(function(buf){
+    var v = new DataView(buf);
+    if (v.getUint16(0) !== 0xFFD8) return blob;
+    if (v.getUint16(2) === 0xFFE0){
+      v.setUint8(13, 1);        // units = dots per inch
+      v.setUint16(14, dpi);     // X density
+      v.setUint16(16, dpi);     // Y density
+      return new Blob([buf], { type: "image/jpeg" });
+    }
+    return blob;
+  }).catch(function(){ return blob; });
+}
+
+function baseName(n){ return n.replace(/\.[^.]+$/, ""); }
+
+function download(blob, name){
+  if (!(blob instanceof Blob)) throw new Error("Nothing to save for " + name + ".");
+  var a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 4000);
+}
+
+$("btnManifest").onclick = function(){
+  if (!manifest) return;
+  download(new Blob([JSON.stringify(manifest, null, 2)], { type: "application/json" }),
+           "correction_manifest.json");
+};
+
+
+/* ============================================================
+   HANG · layout and wall rendering
+   Works are hung on a common centre line at their true relative
+   size, with even edge-to-edge gaps — not packed into equal cells.
+   ============================================================ */
+
+var MARGIN_FRAC = 0.075, FALLBACK_LONG_IN = 10;
+
+var MAT_W     = { none: 0, s: 1.5, m: 2, l: 3 };
+var FRAME_W   = { none: 0, thin: 0.25, std: 0.5, wide: 0.9 };
+var MAT_COL   = { white: "#fbfaf6", cream: "#f4f1e8", grey: "#e6e2d8" };
+var FRAME_COL = { black: "#2b2b28", oak: "#b08d5c", white: "#f7f6f2", walnut: "#4a3526" };
+
+/* The wall's default treatment, before any per-piece override. */
+function wallMount(){
+  return {
+    mat:      MAT_W[$("matWidth").value],
+    frame:    FRAME_W[$("frameWidth").value],
+    matCol:   MAT_COL[$("matColor").value],
+    frameCol: FRAME_COL[$("frameColor").value]
+  };
+}
+
+/* A piece either follows the wall or states its own treatment.
+   Unframed means the print hangs as a bare object — no mat, no frame,
+   and a correspondingly smaller footprint on the wall. */
+function mountFor(it, base){
+  switch (it.mount){
+    case "none":  return { mat: 0, frame: 0, matCol: base.matCol, frameCol: base.frameCol };
+    case "mat":   return { mat: base.mat || 2, frame: 0, matCol: base.matCol, frameCol: base.frameCol };
+    case "frame": return { mat: base.mat, frame: base.frame || 0.5, matCol: base.matCol, frameCol: base.frameCol };
+    default:      return base;
+  }
+}
+
+function mountsFor(base){ return items.map(function(it){ return mountFor(it, base); }); }
+
+/* Art size in inches. Sheets with no stated size fall back to a common long edge. */
+function workSize(it){
+  var p = paperSize(it);
+  if (p) return { w: p.w, h: p.h, known: true };
+  var ar = outputAspect(it);
+  return ar >= 1
+    ? { w: FALLBACK_LONG_IN, h: FALLBACK_LONG_IN / ar, known: false }
+    : { w: FALLBACK_LONG_IN * ar, h: FALLBACK_LONG_IN, known: false };
+}
+
+/* Footprint is art plus that piece's own mount, so an unframed print
+   takes less wall than a matted one and the hang re-solves around it. */
+function footprints(sizes, mounts){
+  return sizes.map(function(s, i){
+    var pad = 2 * (mounts[i].mat + mounts[i].frame);
+    return { w: s.w + pad, h: s.h + pad };
+  });
+}
+
+/* Balanced row packing: widest work to the emptiest row, then the heaviest
+   work in each row pulled toward its centre. */
+function packRows(fp, r, gap){
+  if (r > fp.length) return null;
+  var rows = [];
+  for (var i = 0; i < r; i++) rows.push({ items: [], w: 0 });
+  var order = fp.map(function(_, i){ return i; })
+                .sort(function(a, b){ return fp[b].w - fp[a].w; });
+  order.forEach(function(i){
+    var t = rows[0];
+    for (var k = 1; k < rows.length; k++) if (rows[k].w < t.w) t = rows[k];
+    t.items.push(i);
+    t.w += fp[i].w;
+  });
+  for (var j = 0; j < rows.length; j++) if (!rows[j].items.length) return null;
+
+  rows.forEach(function(row){
+    row.items.sort(function(a, b){ return fp[b].w * fp[b].h - fp[a].w * fp[a].h; });
+    var out = [], left = true;
+    row.items.forEach(function(i){ if (left) out.push(i); else out.unshift(i); left = !left; });
+    row.items = out;
+    row.width = row.items.reduce(function(t, i){ return t + fp[i].w; }, 0) + gap * (row.items.length - 1);
+    row.height = Math.max.apply(null, row.items.map(function(i){ return fp[i].h; }));
+  });
+  return rows;
+}
+
+/* Try each plausible row count, keep whichever lets the work hang largest. */
+function planWall(fp, wallW, wallH, gap, wantRows){
+  var candidates = wantRows ? [wantRows] : [1, 2, 3];
+  var best = null;
+  candidates.forEach(function(r){
+    var rows = packRows(fp, r, gap);
+    if (!rows) return;
+    var blockW = Math.max.apply(null, rows.map(function(x){ return x.width; }));
+    var blockH = rows.reduce(function(t, x){ return t + x.height; }, 0) + gap * (rows.length - 1);
+    var scale = Math.min(
+      (wallW * (1 - 2 * MARGIN_FRAC)) / blockW,
+      (wallH * (1 - 2 * MARGIN_FRAC)) / blockH);
+    if (!best || scale > best.scale) best = { rows: rows, scale: scale, blockW: blockW, blockH: blockH };
+  });
+  return best;
+}
+
+function placements(sizes, wallW, wallH, gapIn, wantRows, mounts){
+  var fp = footprints(sizes, mounts);
+  var plan = planWall(fp, wallW, wallH, gapIn, wantRows);
+  if (!plan) return null;
+  var s = plan.scale;
+  var y = (wallH - plan.blockH * s) / 2;
+  var out = [];
+
+  plan.rows.forEach(function(row){
+    var rowH = row.height * s;
+    var cy = y + rowH / 2;                       // the common centre line for this row
+    var x = (wallW - row.width * s) / 2;
+    row.items.forEach(function(i){
+      var pad = (mounts[i].mat + mounts[i].frame) * s;
+      var fw = fp[i].w * s, fh = fp[i].h * s;
+      out.push({
+        i: i,
+        mountX: x, mountY: cy - fh / 2, mountW: fw, mountH: fh,
+        artX: x + pad, artY: cy - fh / 2 + pad,
+        artW: Math.max(1, Math.round(sizes[i].w * s)),
+        artH: Math.max(1, Math.round(sizes[i].h * s))
+      });
+      x += fw + gapIn * s;
+    });
+    y += rowH + gapIn * s;
+  });
+
+  return { list: out, rows: plan.rows.length, scale: s };
+}
+
+/* getArt(index, wPx, hPx) returns something drawImage accepts. */
+function paintWall(ctx, W, H, pl, mounts, getArt){
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = "#f1eee6";
+  ctx.fillRect(0, 0, W, H);
+
+  // Room light: top-lit and falling off downward. Restrained, but actually visible.
+  var g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0,   "rgba(255,255,255,0.055)");
+  g.addColorStop(0.55,"rgba(255,255,255,0)");
+  g.addColorStop(1,   "rgba(0,0,0,0.055)");
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, H);
+
+  // A soft pool above each work, the way a track head throws light.
+  pl.list.forEach(function(p){
+    var cx = p.mountX + p.mountW / 2, cy = p.mountY;
+    var rad = Math.max(p.mountW, p.mountH) * 1.15;
+    var rg = ctx.createRadialGradient(cx, cy, 0, cx, cy, rad);
+    rg.addColorStop(0, "rgba(255,255,255,0.11)");
+    rg.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = rg;
+    ctx.fillRect(cx - rad, cy - rad, rad * 2, rad * 2);
+  });
+
+  pl.list.forEach(function(p){
+    var m = mounts[p.i];
+    var fw = m.frame * pl.scale;
+
+    ctx.save();
+    ctx.shadowColor = "rgba(28,26,20,0.22)";
+    // A bare sheet sits closer to the wall than a framed one.
+    var lift = m.frame ? 1 : m.mat ? 0.7 : 0.45;
+    ctx.shadowBlur = Math.max(4, p.mountW * 0.035 * lift);
+    ctx.shadowOffsetY = Math.max(2, p.mountW * 0.012 * lift);
+
+    if (m.frame){
+      ctx.fillStyle = m.frameCol;
+      ctx.fillRect(p.mountX, p.mountY, p.mountW, p.mountH);
+      ctx.shadowColor = "transparent";
+      ctx.fillStyle = m.matCol;
+      ctx.fillRect(p.mountX + fw, p.mountY + fw, p.mountW - 2 * fw, p.mountH - 2 * fw);
+    } else if (m.mat){
+      ctx.fillStyle = m.matCol;
+      ctx.fillRect(p.mountX, p.mountY, p.mountW, p.mountH);
+    } else {
+      // Unframed: no board behind the sheet, just the print and its own shadow.
+      ctx.fillStyle = "#fbfaf6";
+      ctx.fillRect(p.artX, p.artY, p.artW, p.artH);
+    }
+    ctx.restore();
+
+    var art = getArt(p.i, p.artW, p.artH);
+    if (art) ctx.drawImage(art, p.artX, p.artY, p.artW, p.artH);
+  });
+}
+
+function wallInputs(){
+  var base = wallMount();
+  return {
+    ar: parseFloat($("wallShape").value),
+    rows: parseInt($("rows").value, 10) || 0,
+    gap: parseFloat($("spacing").value),
+    base: base,
+    mounts: mountsFor(base),
+    trueScale: $("scaleMode").value === "true"
+  };
+}
+
+function sizesFor(opts){
+  var sizes = items.map(workSize);
+  if (!opts.trueScale){
+    // Equalize area so no single sheet dominates by virtue of being large.
+    var target = 100;
+    sizes = sizes.map(function(s){
+      var k = Math.sqrt(target / (s.w * s.h));
+      return { w: s.w * k, h: s.h * k, known: s.known };
+    });
+  }
+  return sizes;
+}
+
+/* ---- per-piece overrides ---- */
+
+function drawPieces(){
+  var box = $("pieces");
+  box.innerHTML = "";
+  items.forEach(function(it, i){
+    var row = document.createElement("div");
+    row.className = "piece";
+
+    var img = document.createElement("img");
+    img.src = it.thumb || "";
+    img.alt = "";
+    row.appendChild(img);
+
+    var nm = document.createElement("span");
+    nm.className = "nm";
+    nm.textContent = it.name;
+    nm.title = it.name;
+    row.appendChild(nm);
+
+    var sel = document.createElement("select");
+    [["default","Match the wall"],["frame","Mat and frame"],["mat","Mat only"],["none","Unframed"]]
+      .forEach(function(o){
+        var op = document.createElement("option");
+        op.value = o[0]; op.textContent = o[1];
+        if (it.mount === o[0]) op.selected = true;
+        sel.appendChild(op);
+      });
+    sel.setAttribute("aria-label", "Mount for " + it.name);
+    sel.onchange = function(){ it.mount = this.value; drawWall(); };
+    row.appendChild(sel);
+
+    box.appendChild(row);
+  });
+}
+
+function drawWall(){
+  if (!items.length) return;
+  var o = wallInputs();
+  var W = 560, H = Math.round(W / o.ar);
+  var wcv = $("wcv");
+  wcv.width = W; wcv.height = H;
+  var sizes = sizesFor(o);
+  var pl = placements(sizes, W, H, o.gap, o.rows, o.mounts);
+  if (!pl){ $("hangNote").textContent = "Too many rows for this many works."; return; }
+
+  paintWall(wcv.getContext("2d"), W, H, pl, o.mounts, function(i, w, h){
+    var r = renderRect(items[i], Math.max(2, w), Math.max(2, h));
+    return r ? r.canvas : null;
+  });
+
+  var unknown = sizes.filter(function(s){ return !s.known; }).length;
+  var bare = o.mounts.filter(function(m){ return !m.mat && !m.frame; }).length;
+  var bits = [
+    items.length + (items.length === 1 ? " work" : " works"),
+    pl.rows + (pl.rows === 1 ? " row" : " rows"),
+    "hung on a common centre line"
+  ];
+  if (bare && bare < items.length) bits.push(bare + " unframed");
+  var t = bits.join(" · ") + ".";
+  if (o.trueScale && unknown)
+    t += " " + unknown + " sheet" + (unknown === 1 ? " has" : "s have") +
+         " no size set, placed at " + FALLBACK_LONG_IN + " in on the long edge.";
+  $("hangNote").textContent = t;
+}
+
+["wallShape","rows","scaleMode","matWidth","matColor","frameWidth","frameColor"].forEach(function(id){
+  $(id).onchange = drawWall;
+});
+$("spacing").oninput = function(){
+  $("spacingVal").textContent = this.value;
+  drawWall();
+};
+
+/* ---- wall export ---- */
+
+$("btnWall").onclick = async function(){
+  var btn = this;
+  btn.disabled = true;
+  $("wbar").classList.add("on");
+
+  var o = wallInputs();
+  var W = 4000, H = Math.round(W / o.ar);
+  var sizes = sizesFor(o);
+  var pl = placements(sizes, W, H, o.gap, o.rows, o.mounts);
+  if (!pl){ btn.disabled = false; $("wbar").classList.remove("on"); return; }
+
+  var q = Math.max(60, Math.min(100, parseInt($("quality").value, 10) || 95)) / 100;
+  var art = {};
+
+  try {
+    for (var n = 0; n < pl.list.length; n++){
+      var p = pl.list[n];
+      $("hangNote").textContent = "Rendering " + items[p.i].name + " — " + (n + 1) + " of " + pl.list.length + ".";
+      var res = await runWorker({
+        file: items[p.i].file, quad: items[p.i].quad,
+        W: p.artW, H: p.artH, wb: items[p.i].wb,
+        quality: 0.95, maxDecode: MAX_DECODE
+      });
+      art[p.i] = await createImageBitmap(res.blob);
+      $("wbarFill").style.width = Math.round((n + 1) / pl.list.length * 100) + "%";
+    }
+
+    var wall = document.createElement("canvas");
+    wall.width = W; wall.height = H;
+    paintWall(wall.getContext("2d"), W, H, pl, o.mounts, function(i){ return art[i] || null; });
+
+    var blob = await new Promise(function(r){ wall.toBlob(r, "image/jpeg", q); });
+    download(await withDPI(blob, 300), "gallery_wall.jpg");
+    $("hangNote").textContent = "Exported gallery_wall.jpg at " + W + " × " + H + " px.";
+  } catch (err) {
+    $("hangNote").textContent = "Stopped: " + err.message;
+  } finally {
+    Object.keys(art).forEach(function(k){ art[k].close && art[k].close(); });
+    $("wbar").classList.remove("on");
+    $("wbarFill").style.width = "0%";
+    btn.disabled = false;
+  }
+};
+
+function note(t){ $("exportNote").textContent = t; }
+</script>
+</body>
+</html>
