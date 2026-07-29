@@ -13,6 +13,7 @@ const Router = {
     negatives: (v)      => Negatives.render(v),
     cmyk:      (v)      => Separations.render(v),
     account:   (v)      => Mine.account(v)
+    gallerybench: (v)   => GalleryBench.render(v),
   },
 
   go(route) { location.hash = "#/" + route; },
