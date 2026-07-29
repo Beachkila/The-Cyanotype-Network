@@ -121,7 +121,14 @@ select,input[type=number]{
 .measure span.k{ color:var(--gray); font-variant:small-caps; letter-spacing:.04em; }
 .measure span.v{ font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:13px; }
 .note{ font-size:13px; color:var(--gray); margin-top:8px; }
+.check{ display:flex; align-items:center; gap:8px; font-size:14px; color:var(--ink);
+  margin-top:10px; cursor:pointer; min-height:44px; }
+.check input{ width:20px; height:20px; accent-color:var(--prussian); flex:0 0 auto; }
 .pieces{ border:1px solid var(--divider); border-radius:6px; }
+.piece .mv{ display:flex; gap:4px; flex:0 0 auto; }
+.piece .mv button{ width:34px; height:38px; border:1px solid var(--divider); border-radius:5px;
+  background:var(--paper); color:var(--prussian); font:inherit; font-size:15px; line-height:1; cursor:pointer; }
+.piece .mv button:disabled{ color:var(--faint); cursor:default; }
 .piece{ display:flex; gap:10px; align-items:center; padding:8px 10px; border-bottom:1px solid var(--divider); }
 .piece:last-child{ border-bottom:0; }
 .piece img{ width:38px; height:38px; object-fit:contain; background:var(--prussian-wash);
@@ -178,6 +185,7 @@ if (window.self !== window.top) {
       <div class="loupe" id="loupe"><canvas id="lcv" width="112" height="112"></canvas></div>
     </div>
     <div class="hint">Drag each marker onto a corner of the paper. The loupe shows what sits under your finger.</div>
+    <label class="check"><input type="checkbox" id="snap90"> Constrain to a rectangle — keeps all four corners at 90°</label>
     <div class="btnrow">
       <button class="btn ghost" id="btnReset">Reset to full frame</button>
     </div>
@@ -257,17 +265,28 @@ if (window.self !== window.top) {
         </select>
       </div>
       <div>
+        <label class="field" for="arrange">Arrangement</label>
+        <select id="arrange">
+          <option value="balanced" selected>Balanced rows</option>
+          <option value="ordered">Rows, in my order</option>
+          <option value="circular">Circular</option>
+          <option value="salon">Salon — shuffled</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="two">
+      <div>
         <label class="field" for="rows">Rows</label>
         <select id="rows">
           <option value="0" selected>Auto</option>
           <option value="1">One line</option>
           <option value="2">Two</option>
           <option value="3">Three</option>
+          <option value="4">Four</option>
+          <option value="5">Five</option>
         </select>
       </div>
-    </div>
-
-    <div class="two">
       <div>
         <label class="field" for="scaleMode">Scale</label>
         <select id="scaleMode">
@@ -275,6 +294,35 @@ if (window.self !== window.top) {
           <option value="even">Even visual weight</option>
         </select>
       </div>
+    </div>
+
+    <div class="two">
+      <div>
+        <label class="field" for="wallColor">Wall colour</label>
+        <select id="wallColor">
+          <option value="gallery" selected>Gallery warm</option>
+          <option value="white">Gallery white</option>
+          <option value="bone">Bone</option>
+          <option value="grey">Pale grey</option>
+          <option value="sage">Sage</option>
+          <option value="clay">Clay</option>
+          <option value="charcoal">Charcoal</option>
+          <option value="prussian">Prussian</option>
+        </select>
+      </div>
+      <div>
+        <label class="field" for="wallTexture">Wall surface</label>
+        <select id="wallTexture">
+          <option value="none">Smooth</option>
+          <option value="plaster" selected>Plaster</option>
+          <option value="concrete">Concrete</option>
+          <option value="linen">Linen</option>
+          <option value="canvas">Canvas weave</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="two">
       <div>
         <label class="field" for="matWidth">Mat</label>
         <select id="matWidth">
@@ -299,23 +347,45 @@ if (window.self !== window.top) {
         <label class="field" for="frameColor">Frame finish</label>
         <select id="frameColor">
           <option value="black" selected>Black</option>
-          <option value="oak">Natural oak</option>
-          <option value="white">White</option>
+          <option value="ebony">Ebony</option>
           <option value="walnut">Walnut</option>
+          <option value="oak">Natural oak</option>
+          <option value="maple">Maple</option>
+          <option value="driftwood">Driftwood</option>
+          <option value="white">White</option>
+          <option value="gold">Gilt</option>
+          <option value="silver">Brushed silver</option>
         </select>
       </div>
     </div>
 
-    <label class="field" for="frameWidth">Frame</label>
-    <select id="frameWidth">
-      <option value="none">No frame</option>
-      <option value="thin">Thin — 0.25 in</option>
-      <option value="std" selected>Standard — 0.5 in</option>
-      <option value="wide">Wide — 0.9 in</option>
-    </select>
+    <div class="two">
+      <div>
+        <label class="field" for="frameWidth">Frame</label>
+        <select id="frameWidth">
+          <option value="none">No frame</option>
+          <option value="thin">Thin — 0.25 in</option>
+          <option value="std" selected>Standard — 0.5 in</option>
+          <option value="wide">Wide — 0.9 in</option>
+        </select>
+      </div>
+      <div>
+        <label class="field" for="frameTexture">Frame surface</label>
+        <select id="frameTexture">
+          <option value="flat">Flat</option>
+          <option value="wood" selected>Wood grain</option>
+          <option value="brushed">Brushed metal</option>
+          <option value="gilded">Gilded</option>
+        </select>
+      </div>
+    </div>
 
     <label class="field" for="spacing">Space between works — <span id="spacingVal">4</span> in</label>
     <input type="range" id="spacing" min="1" max="12" step="0.5" value="4" style="width:100%">
+
+    <div class="btnrow hide" id="shuffleRow">
+      <button class="btn ghost" id="btnShuffle">Reshuffle the salon</button>
+    </div>
 
     <label class="field">Individual pieces</label>
     <div class="pieces" id="pieces"></div>
@@ -635,7 +705,7 @@ function onMove(e){
   var r = cv.getBoundingClientRect();
   var nx = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
   var ny = Math.max(0, Math.min(1, (e.clientY - r.top)  / r.height));
-  it.quad[+dragging.dataset.i] = [nx, ny];
+  setCorner(it, +dragging.dataset.i, nx, ny);
   placeHandles();
   showLoupe(nx, ny, e.clientY - r.top < r.height * 0.35);
   scheduleRectify();
@@ -653,16 +723,38 @@ function onUp(e){
   drawWall();
 }
 
+/* Corners are TL 0, TR 1, BR 2, BL 3. With the constraint on, moving one corner
+   drags its two neighbours so the quad stays an axis-aligned rectangle. */
+var SHARE_Y = [1, 0, 3, 2], SHARE_X = [3, 2, 1, 0];
+
+function setCorner(it, idx, nx, ny){
+  it.quad[idx] = [nx, ny];
+  if (!$("snap90").checked) return;
+  var q = it.quad, hy = SHARE_Y[idx], vx = SHARE_X[idx];
+  q[hy] = [q[hy][0], ny];
+  q[vx] = [nx, q[vx][1]];
+}
+
+$("snap90").onchange = function(){
+  if (!this.checked || active < 0) return;
+  // Square up whatever is already there, using its bounding box.
+  var q = items[active].quad;
+  var xs = q.map(function(p){ return p[0]; }), ys = q.map(function(p){ return p[1]; });
+  var x0 = Math.min.apply(null, xs), x1 = Math.max.apply(null, xs);
+  var y0 = Math.min.apply(null, ys), y1 = Math.max.apply(null, ys);
+  items[active].quad = [[x0,y0],[x1,y0],[x1,y1],[x0,y1]];
+  placeHandles(); rectify(); drawWall();
+};
+
 function onKey(e){
   var step = e.shiftKey ? 0.01 : 0.002;
   var d = { ArrowLeft:[-step,0], ArrowRight:[step,0], ArrowUp:[0,-step], ArrowDown:[0,step] }[e.key];
   if (!d) return;
   e.preventDefault();
   var it = items[active], p = it.quad[+this.dataset.i];
-  it.quad[+this.dataset.i] = [
+  setCorner(it, +this.dataset.i,
     Math.max(0, Math.min(1, p[0] + d[0])),
-    Math.max(0, Math.min(1, p[1] + d[1]))
-  ];
+    Math.max(0, Math.min(1, p[1] + d[1])));
   placeHandles();
   rectify();
 }
@@ -1067,33 +1159,61 @@ var MARGIN_FRAC = 0.075, FALLBACK_LONG_IN = 10;
 var MAT_W     = { none: 0, s: 1.5, m: 2, l: 3 };
 var FRAME_W   = { none: 0, thin: 0.25, std: 0.5, wide: 0.9 };
 var MAT_COL   = { white: "#fbfaf6", cream: "#f4f1e8", grey: "#e6e2d8" };
-var FRAME_COL = { black: "#2b2b28", oak: "#b08d5c", white: "#f7f6f2", walnut: "#4a3526" };
 
-/* The wall's default treatment, before any per-piece override. */
+var FRAME_COL = {
+  black: "#2b2b28", ebony: "#17171a", walnut: "#4a3526", oak: "#b08d5c",
+  maple: "#d9bf92", driftwood: "#918b81", white: "#f7f6f2",
+  gold: "#b18f3f", silver: "#a9a9a5"
+};
+
+var WALL_COL = {
+  gallery: "#f1eee6", white: "#f8f7f4", bone: "#e9e3d5", grey: "#dedbd5",
+  sage: "#dde2d6", clay: "#e6d8ce", charcoal: "#3a3a37", prussian: "#16385c"
+};
+
+var salonSeed = 1;
+
+/* deterministic PRNG so a given seed always yields the same salon */
+function rng(seed){
+  var a = seed >>> 0;
+  return function(){
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    var t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+function hexLum(hex){
+  var n = parseInt(hex.slice(1), 16);
+  return (0.2126 * (n >> 16 & 255) + 0.7152 * (n >> 8 & 255) + 0.0722 * (n & 255)) / 255;
+}
+
+/* ---------------- mounts ---------------- */
+
 function wallMount(){
   return {
     mat:      MAT_W[$("matWidth").value],
     frame:    FRAME_W[$("frameWidth").value],
     matCol:   MAT_COL[$("matColor").value],
-    frameCol: FRAME_COL[$("frameColor").value]
+    frameCol: FRAME_COL[$("frameColor").value],
+    frameTex: $("frameTexture").value
   };
 }
 
-/* A piece either follows the wall or states its own treatment.
-   Unframed means the print hangs as a bare object — no mat, no frame,
-   and a correspondingly smaller footprint on the wall. */
 function mountFor(it, base){
   switch (it.mount){
-    case "none":  return { mat: 0, frame: 0, matCol: base.matCol, frameCol: base.frameCol };
-    case "mat":   return { mat: base.mat || 2, frame: 0, matCol: base.matCol, frameCol: base.frameCol };
-    case "frame": return { mat: base.mat, frame: base.frame || 0.5, matCol: base.matCol, frameCol: base.frameCol };
+    case "none":  return { mat: 0, frame: 0, matCol: base.matCol, frameCol: base.frameCol, frameTex: base.frameTex };
+    case "mat":   return { mat: base.mat || 2, frame: 0, matCol: base.matCol, frameCol: base.frameCol, frameTex: base.frameTex };
+    case "frame": return { mat: base.mat, frame: base.frame || 0.5, matCol: base.matCol, frameCol: base.frameCol, frameTex: base.frameTex };
     default:      return base;
   }
 }
 
 function mountsFor(base){ return items.map(function(it){ return mountFor(it, base); }); }
 
-/* Art size in inches. Sheets with no stated size fall back to a common long edge. */
+/* ---------------- sizing ---------------- */
+
 function workSize(it){
   var p = paperSize(it);
   if (p) return { w: p.w, h: p.h, known: true };
@@ -1103,8 +1223,6 @@ function workSize(it){
     : { w: FALLBACK_LONG_IN * ar, h: FALLBACK_LONG_IN, known: false };
 }
 
-/* Footprint is art plus that piece's own mount, so an unframed print
-   takes less wall than a matted one and the hang re-solves around it. */
 function footprints(sizes, mounts){
   return sizes.map(function(s, i){
     var pad = 2 * (mounts[i].mat + mounts[i].frame);
@@ -1112,39 +1230,71 @@ function footprints(sizes, mounts){
   });
 }
 
-/* Balanced row packing: widest work to the emptiest row, then the heaviest
-   work in each row pulled toward its centre. */
-function packRows(fp, r, gap){
-  if (r > fp.length) return null;
-  var rows = [];
-  for (var i = 0; i < r; i++) rows.push({ items: [], w: 0 });
-  var order = fp.map(function(_, i){ return i; })
-                .sort(function(a, b){ return fp[b].w - fp[a].w; });
-  order.forEach(function(i){
-    var t = rows[0];
-    for (var k = 1; k < rows.length; k++) if (rows[k].w < t.w) t = rows[k];
-    t.items.push(i);
-    t.w += fp[i].w;
+function finalizeRows(groups, fp, gap){
+  return groups.map(function(g){
+    return {
+      items: g,
+      width: g.reduce(function(t, i){ return t + fp[i].w; }, 0) + gap * (g.length - 1),
+      height: Math.max.apply(null, g.map(function(i){ return fp[i].h; }))
+    };
   });
-  for (var j = 0; j < rows.length; j++) if (!rows[j].items.length) return null;
-
-  rows.forEach(function(row){
-    row.items.sort(function(a, b){ return fp[b].w * fp[b].h - fp[a].w * fp[a].h; });
-    var out = [], left = true;
-    row.items.forEach(function(i){ if (left) out.push(i); else out.unshift(i); left = !left; });
-    row.items = out;
-    row.width = row.items.reduce(function(t, i){ return t + fp[i].w; }, 0) + gap * (row.items.length - 1);
-    row.height = Math.max.apply(null, row.items.map(function(i){ return fp[i].h; }));
-  });
-  return rows;
 }
 
-/* Try each plausible row count, keep whichever lets the work hang largest. */
-function planWall(fp, wallW, wallH, gap, wantRows){
-  var candidates = wantRows ? [wantRows] : [1, 2, 3];
+/* Balanced: widest work to the emptiest row, heaviest pulled to each row's centre. */
+function packBalanced(fp, r, gap){
+  if (r > fp.length) return null;
+  var buckets = [];
+  for (var i = 0; i < r; i++) buckets.push({ items: [], w: 0 });
+  fp.map(function(_, i){ return i; })
+    .sort(function(a, b){ return fp[b].w - fp[a].w; })
+    .forEach(function(i){
+      var t = buckets[0];
+      for (var k = 1; k < buckets.length; k++) if (buckets[k].w < t.w) t = buckets[k];
+      t.items.push(i); t.w += fp[i].w;
+    });
+  for (var j = 0; j < buckets.length; j++) if (!buckets[j].items.length) return null;
+
+  var groups = buckets.map(function(b){
+    b.items.sort(function(a, c){ return fp[c].w * fp[c].h - fp[a].w * fp[a].h; });
+    var out = [], left = true;
+    b.items.forEach(function(i){ if (left) out.push(i); else out.unshift(i); left = !left; });
+    return out;
+  });
+  return finalizeRows(groups, fp, gap);
+}
+
+/* Ordered: keep the given sequence, split into r rows of near-equal width. */
+function packOrdered(fp, r, gap, order){
+  var n = order.length;
+  if (r > n) return null;
+  var total = order.reduce(function(t, i){ return t + fp[i].w; }, 0);
+  var target = total / r;
+  var groups = [], cur = [], w = 0;
+  order.forEach(function(idx, k){
+    var rowsLeft = r - groups.length;
+    var itemsLeft = n - k;
+    var mustClose = itemsLeft === rowsLeft - 1 + cur.length && false;
+    var canClose = cur.length > 0 && itemsLeft > rowsLeft - 1;
+    if (rowsLeft > 1 && canClose && w + fp[idx].w / 2 > target){
+      groups.push(cur); cur = []; w = 0;
+    }
+    cur.push(idx); w += fp[idx].w;
+    // force a break if the remaining works exactly fill the remaining rows
+    if (groups.length < r - 1 && (n - k - 1) === (r - groups.length - 1)){
+      groups.push(cur); cur = []; w = 0;
+    }
+  });
+  if (cur.length) groups.push(cur);
+  if (groups.length !== r || groups.some(function(g){ return !g.length; })) return null;
+  return finalizeRows(groups, fp, gap);
+}
+
+function planRows(fp, wallW, wallH, gap, wantRows, mode, order){
+  var candidates = wantRows ? [wantRows] : [1, 2, 3, 4, 5];
   var best = null;
   candidates.forEach(function(r){
-    var rows = packRows(fp, r, gap);
+    if (r > fp.length) return;
+    var rows = mode === "balanced" ? packBalanced(fp, r, gap) : packOrdered(fp, r, gap, order);
     if (!rows) return;
     var blockW = Math.max.apply(null, rows.map(function(x){ return x.width; }));
     var blockH = rows.reduce(function(t, x){ return t + x.height; }, 0) + gap * (rows.length - 1);
@@ -1156,69 +1306,248 @@ function planWall(fp, wallW, wallH, gap, wantRows){
   return best;
 }
 
-function placements(sizes, wallW, wallH, gapIn, wantRows, mounts){
+function place(i, sizes, mounts, cx, cy, fpw, fph, s, out){
+  var pad = (mounts[i].mat + mounts[i].frame) * s;
+  out.push({
+    i: i,
+    mountX: cx - fpw / 2, mountY: cy - fph / 2, mountW: fpw, mountH: fph,
+    artX: cx - fpw / 2 + pad, artY: cy - fph / 2 + pad,
+    artW: Math.max(1, Math.round(sizes[i].w * s)),
+    artH: Math.max(1, Math.round(sizes[i].h * s))
+  });
+}
+
+function rowPlacements(sizes, mounts, wallW, wallH, gapIn, wantRows, mode, order){
   var fp = footprints(sizes, mounts);
-  var plan = planWall(fp, wallW, wallH, gapIn, wantRows);
+  var plan = planRows(fp, wallW, wallH, gapIn, wantRows, mode, order);
   if (!plan) return null;
-  var s = plan.scale;
-  var y = (wallH - plan.blockH * s) / 2;
-  var out = [];
+  var s = plan.scale, y = (wallH - plan.blockH * s) / 2, out = [];
 
   plan.rows.forEach(function(row){
     var rowH = row.height * s;
-    var cy = y + rowH / 2;                       // the common centre line for this row
+    var cy = y + rowH / 2;                      // the common centre line for this row
     var x = (wallW - row.width * s) / 2;
     row.items.forEach(function(i){
-      var pad = (mounts[i].mat + mounts[i].frame) * s;
       var fw = fp[i].w * s, fh = fp[i].h * s;
-      out.push({
-        i: i,
-        mountX: x, mountY: cy - fh / 2, mountW: fw, mountH: fh,
-        artX: x + pad, artY: cy - fh / 2 + pad,
-        artW: Math.max(1, Math.round(sizes[i].w * s)),
-        artH: Math.max(1, Math.round(sizes[i].h * s))
-      });
+      place(i, sizes, mounts, x + fw / 2, cy, fw, fh, s, out);
       x += fw + gapIn * s;
     });
     y += rowH + gapIn * s;
   });
-
   return { list: out, rows: plan.rows.length, scale: s };
 }
 
-/* getArt(index, wPx, hPx) returns something drawImage accepts. */
-function paintWall(ctx, W, H, pl, mounts, getArt){
-  ctx.clearRect(0, 0, W, H);
-  ctx.fillStyle = "#f1eee6";
+/* Circular: centres on a ring, works kept upright.
+
+   The radius is solved rather than estimated. Sizing it from width alone
+   collides portrait works vertically, so this binary-searches the smallest
+   radius at which no two axis-aligned footprints overlap, gap included. */
+function circularRadius(fp, order, gapIn){
+  var n = order.length;
+  var ang = order.map(function(_, k){ return -Math.PI / 2 + k * 2 * Math.PI / n; });
+
+  function clear(R){
+    for (var a = 0; a < n; a++){
+      for (var b = a + 1; b < n; b++){
+        var ia = order[a], ib = order[b];
+        var dx = Math.abs(R * Math.cos(ang[a]) - R * Math.cos(ang[b]));
+        var dy = Math.abs(R * Math.sin(ang[a]) - R * Math.sin(ang[b]));
+        var needX = (fp[ia].w + fp[ib].w) / 2 + gapIn;
+        var needY = (fp[ia].h + fp[ib].h) / 2 + gapIn;
+        if (dx < needX && dy < needY) return false;   // boxes intersect
+      }
+    }
+    return true;
+  }
+
+  var hi = 1;
+  while (!clear(hi) && hi < 1e6) hi *= 2;
+  var lo = hi / 2;
+  for (var k = 0; k < 48; k++){
+    var mid = (lo + hi) / 2;
+    if (clear(mid)) hi = mid; else lo = mid;
+  }
+  return hi;
+}
+
+function circularPlacements(sizes, mounts, wallW, wallH, gapIn, order){
+  var fp = footprints(sizes, mounts), n = order.length;
+
+  if (n === 1){
+    var i0 = order[0];
+    var s1 = Math.min(wallW * (1 - 2 * MARGIN_FRAC) / fp[i0].w,
+                      wallH * (1 - 2 * MARGIN_FRAC) / fp[i0].h);
+    var o1 = [];
+    place(i0, sizes, mounts, wallW / 2, wallH / 2, fp[i0].w * s1, fp[i0].h * s1, s1, o1);
+    return { list: o1, rows: 1, scale: s1 };
+  }
+
+  var R = circularRadius(fp, order, gapIn);
+  var ang = order.map(function(_, k){ return -Math.PI / 2 + k * 2 * Math.PI / n; });
+
+  // exact bounds of the ring, in inches
+  var minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  order.forEach(function(i, k){
+    var cx = R * Math.cos(ang[k]), cy = R * Math.sin(ang[k]);
+    minX = Math.min(minX, cx - fp[i].w / 2); maxX = Math.max(maxX, cx + fp[i].w / 2);
+    minY = Math.min(minY, cy - fp[i].h / 2); maxY = Math.max(maxY, cy + fp[i].h / 2);
+  });
+  var blockW = maxX - minX, blockH = maxY - minY;
+  var s = Math.min(wallW * (1 - 2 * MARGIN_FRAC) / blockW,
+                   wallH * (1 - 2 * MARGIN_FRAC) / blockH);
+
+  // centre the ring's true bounding box on the wall
+  var ox = wallW / 2 - ((minX + maxX) / 2) * s;
+  var oy = wallH / 2 - ((minY + maxY) / 2) * s;
+
+  var out = [];
+  order.forEach(function(i, k){
+    place(i, sizes, mounts,
+          ox + R * Math.cos(ang[k]) * s,
+          oy + R * Math.sin(ang[k]) * s,
+          fp[i].w * s, fp[i].h * s, s, out);
+  });
+  return { list: out, rows: 1, scale: s };
+}
+
+function placements(sizes, wallW, wallH, gapIn, wantRows, mounts, mode, order){
+  if (mode === "circular") return circularPlacements(sizes, mounts, wallW, wallH, gapIn, order);
+  return rowPlacements(sizes, mounts, wallW, wallH, gapIn, wantRows,
+                       mode === "balanced" ? "balanced" : "ordered", order);
+}
+
+/* ---------------- wall surface ---------------- */
+
+function paintSurface(ctx, W, H, colKey, tex, seed){
+  var base = WALL_COL[colKey] || WALL_COL.gallery;
+  var dark = hexLum(base) < 0.45;
+  ctx.fillStyle = base;
   ctx.fillRect(0, 0, W, H);
 
-  // Room light: top-lit and falling off downward. Restrained, but actually visible.
+  if (tex === "plaster" || tex === "concrete"){
+    var div = tex === "concrete" ? 5 : 9;
+    var nw = Math.max(2, Math.round(W / div)), nh = Math.max(2, Math.round(H / div));
+    var oc = document.createElement("canvas");
+    oc.width = nw; oc.height = nh;
+    var octx = oc.getContext("2d");
+    var img = octx.createImageData(nw, nh), d = img.data, r = rng(seed);
+    var spread = tex === "concrete" ? 46 : 22;
+    for (var i = 0; i < nw * nh; i++){
+      var v = 128 + (r() - 0.5) * spread;
+      d[i*4] = d[i*4+1] = d[i*4+2] = v; d[i*4+3] = 255;
+    }
+    octx.putImageData(img, 0, 0);
+    ctx.save();
+    ctx.globalAlpha = tex === "concrete" ? 0.22 : 0.13;
+    ctx.globalCompositeOperation = "overlay";
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(oc, 0, 0, W, H);
+    ctx.restore();
+  }
+
+  if (tex === "linen" || tex === "canvas"){
+    var step = Math.max(2, Math.round(W / (tex === "canvas" ? 420 : 700)));
+    ctx.save();
+    ctx.globalAlpha = tex === "canvas" ? 0.10 : 0.07;
+    ctx.strokeStyle = dark ? "#ffffff" : "#000000";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (var x = 0; x < W; x += step){ ctx.moveTo(x + 0.5, 0); ctx.lineTo(x + 0.5, H); }
+    for (var y = 0; y < H; y += step){ ctx.moveTo(0, y + 0.5); ctx.lineTo(W, y + 0.5); }
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // room light: top-lit, falling off downward
   var g = ctx.createLinearGradient(0, 0, 0, H);
-  g.addColorStop(0,   "rgba(255,255,255,0.055)");
-  g.addColorStop(0.55,"rgba(255,255,255,0)");
-  g.addColorStop(1,   "rgba(0,0,0,0.055)");
+  g.addColorStop(0,    dark ? "rgba(255,255,255,0.10)" : "rgba(255,255,255,0.055)");
+  g.addColorStop(0.55, "rgba(255,255,255,0)");
+  g.addColorStop(1,    dark ? "rgba(0,0,0,0.10)" : "rgba(0,0,0,0.055)");
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, W, H);
+  return dark;
+}
 
-  // A soft pool above each work, the way a track head throws light.
+/* ---------------- frame surface ---------------- */
+
+function paintFrameTex(ctx, p, fw, m, seed){
+  if (m.frameTex === "flat" || !fw) return;
+  var r = rng(seed);
+  var members = [
+    { x: p.mountX, y: p.mountY, w: p.mountW, h: fw, dir: "h" },                       // top
+    { x: p.mountX, y: p.mountY + p.mountH - fw, w: p.mountW, h: fw, dir: "h" },       // bottom
+    { x: p.mountX, y: p.mountY, w: fw, h: p.mountH, dir: "v" },                       // left
+    { x: p.mountX + p.mountW - fw, y: p.mountY, w: fw, h: p.mountH, dir: "v" }        // right
+  ];
+
+  members.forEach(function(mm){
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(mm.x, mm.y, mm.w, mm.h);
+    ctx.clip();
+
+    if (m.frameTex === "gilded"){
+      var gg = mm.dir === "h"
+        ? ctx.createLinearGradient(mm.x, mm.y, mm.x, mm.y + mm.h)
+        : ctx.createLinearGradient(mm.x, mm.y, mm.x + mm.w, mm.y);
+      gg.addColorStop(0,   "rgba(255,240,200,0.55)");
+      gg.addColorStop(0.4, "rgba(255,255,255,0.10)");
+      gg.addColorStop(0.7, "rgba(90,60,10,0.30)");
+      gg.addColorStop(1,   "rgba(255,235,190,0.35)");
+      ctx.fillStyle = gg;
+      ctx.fillRect(mm.x, mm.y, mm.w, mm.h);
+    } else {
+      var lines = Math.max(3, Math.round((mm.dir === "h" ? mm.h : mm.w) / (m.frameTex === "brushed" ? 1.6 : 3)));
+      ctx.lineWidth = 1;
+      for (var k = 0; k < lines; k++){
+        var t = (k + 0.5) / lines;
+        var a = m.frameTex === "brushed" ? 0.05 + r() * 0.07 : 0.05 + r() * 0.13;
+        ctx.strokeStyle = (r() > 0.5 ? "rgba(255,255,255," : "rgba(0,0,0,") + a.toFixed(3) + ")";
+        ctx.beginPath();
+        if (mm.dir === "h"){
+          var yy = mm.y + t * mm.h;
+          ctx.moveTo(mm.x, yy); ctx.lineTo(mm.x + mm.w, yy);
+        } else {
+          var xx = mm.x + t * mm.w;
+          ctx.moveTo(xx, mm.y); ctx.lineTo(xx, mm.y + mm.h);
+        }
+        ctx.stroke();
+      }
+      if (m.frameTex === "brushed"){
+        var sg = ctx.createLinearGradient(mm.x, mm.y, mm.x + mm.w, mm.y + mm.h);
+        sg.addColorStop(0, "rgba(255,255,255,0.16)");
+        sg.addColorStop(0.5, "rgba(255,255,255,0)");
+        sg.addColorStop(1, "rgba(0,0,0,0.14)");
+        ctx.fillStyle = sg;
+        ctx.fillRect(mm.x, mm.y, mm.w, mm.h);
+      }
+    }
+    ctx.restore();
+  });
+}
+
+/* ---------------- the wall ---------------- */
+
+function paintWall(ctx, W, H, pl, mounts, opts, getArt){
+  ctx.clearRect(0, 0, W, H);
+  var dark = paintSurface(ctx, W, H, opts.wallCol, opts.wallTex, opts.seed);
+
   pl.list.forEach(function(p){
     var cx = p.mountX + p.mountW / 2, cy = p.mountY;
     var rad = Math.max(p.mountW, p.mountH) * 1.15;
     var rg = ctx.createRadialGradient(cx, cy, 0, cx, cy, rad);
-    rg.addColorStop(0, "rgba(255,255,255,0.11)");
+    rg.addColorStop(0, "rgba(255,255,255," + (dark ? 0.16 : 0.11) + ")");
     rg.addColorStop(1, "rgba(255,255,255,0)");
     ctx.fillStyle = rg;
     ctx.fillRect(cx - rad, cy - rad, rad * 2, rad * 2);
   });
 
-  pl.list.forEach(function(p){
-    var m = mounts[p.i];
-    var fw = m.frame * pl.scale;
+  pl.list.forEach(function(p, n){
+    var m = mounts[p.i], fw = m.frame * pl.scale;
 
     ctx.save();
-    ctx.shadowColor = "rgba(28,26,20,0.22)";
-    // A bare sheet sits closer to the wall than a framed one.
-    var lift = m.frame ? 1 : m.mat ? 0.7 : 0.45;
+    ctx.shadowColor = dark ? "rgba(0,0,0,0.5)" : "rgba(28,26,20,0.22)";
+    var lift = m.frame ? 1 : m.mat ? 0.7 : 0.45;   // a bare sheet hangs closer to the wall
     ctx.shadowBlur = Math.max(4, p.mountW * 0.035 * lift);
     ctx.shadowOffsetY = Math.max(2, p.mountW * 0.012 * lift);
 
@@ -1226,13 +1555,13 @@ function paintWall(ctx, W, H, pl, mounts, getArt){
       ctx.fillStyle = m.frameCol;
       ctx.fillRect(p.mountX, p.mountY, p.mountW, p.mountH);
       ctx.shadowColor = "transparent";
+      paintFrameTex(ctx, p, fw, m, opts.seed + n * 977);
       ctx.fillStyle = m.matCol;
       ctx.fillRect(p.mountX + fw, p.mountY + fw, p.mountW - 2 * fw, p.mountH - 2 * fw);
     } else if (m.mat){
       ctx.fillStyle = m.matCol;
       ctx.fillRect(p.mountX, p.mountY, p.mountW, p.mountH);
     } else {
-      // Unframed: no board behind the sheet, just the print and its own shadow.
       ctx.fillStyle = "#fbfaf6";
       ctx.fillRect(p.artX, p.artY, p.artW, p.artH);
     }
@@ -1243,32 +1572,59 @@ function paintWall(ctx, W, H, pl, mounts, getArt){
   });
 }
 
+/* ---------------- inputs ---------------- */
+
+function orderFor(mode){
+  var order = items.map(function(_, i){ return i; });
+  if (mode !== "salon") return order;
+  var r = rng(salonSeed);
+  for (var i = order.length - 1; i > 0; i--){          // Fisher–Yates, seeded
+    var j = Math.floor(r() * (i + 1));
+    var t = order[i]; order[i] = order[j]; order[j] = t;
+  }
+  return order;
+}
+
 function wallInputs(){
   var base = wallMount();
+  var mode = $("arrange").value;
   return {
     ar: parseFloat($("wallShape").value),
     rows: parseInt($("rows").value, 10) || 0,
     gap: parseFloat($("spacing").value),
     base: base,
     mounts: mountsFor(base),
-    trueScale: $("scaleMode").value === "true"
+    trueScale: $("scaleMode").value === "true",
+    mode: mode,
+    order: orderFor(mode),
+    wallCol: $("wallColor").value,
+    wallTex: $("wallTexture").value,
+    seed: salonSeed
   };
 }
 
 function sizesFor(opts){
   var sizes = items.map(workSize);
   if (!opts.trueScale){
-    // Equalize area so no single sheet dominates by virtue of being large.
-    var target = 100;
     sizes = sizes.map(function(s){
-      var k = Math.sqrt(target / (s.w * s.h));
+      var k = Math.sqrt(100 / (s.w * s.h));
       return { w: s.w * k, h: s.h * k, known: s.known };
     });
   }
   return sizes;
 }
 
-/* ---- per-piece overrides ---- */
+/* ---------------- per-piece list ---------------- */
+
+function moveItem(i, d){
+  var j = i + d;
+  if (j < 0 || j >= items.length) return;
+  var t = items[i]; items[i] = items[j]; items[j] = t;
+  if (active === i) active = j; else if (active === j) active = i;
+  // Reordering is a statement about sequence; balanced packing would discard it.
+  if ($("arrange").value === "balanced") $("arrange").value = "ordered";
+  drawStrip(); drawPieces(); drawWall();
+}
 
 function drawPieces(){
   var box = $("pieces");
@@ -1278,18 +1634,28 @@ function drawPieces(){
     row.className = "piece";
 
     var img = document.createElement("img");
-    img.src = it.thumb || "";
-    img.alt = "";
+    img.src = it.thumb || ""; img.alt = "";
     row.appendChild(img);
 
     var nm = document.createElement("span");
     nm.className = "nm";
-    nm.textContent = it.name;
-    nm.title = it.name;
+    nm.textContent = it.name; nm.title = it.name;
     row.appendChild(nm);
 
+    var mv = document.createElement("div");
+    mv.className = "mv";
+    [["\u2191", -1, "earlier"], ["\u2193", 1, "later"]].forEach(function(b){
+      var btn = document.createElement("button");
+      btn.textContent = b[0];
+      btn.setAttribute("aria-label", "Move " + it.name + " " + b[2]);
+      btn.disabled = (b[1] < 0 && i === 0) || (b[1] > 0 && i === items.length - 1);
+      btn.onclick = function(){ moveItem(i, b[1]); };
+      mv.appendChild(btn);
+    });
+    row.appendChild(mv);
+
     var sel = document.createElement("select");
-    [["default","Match the wall"],["frame","Mat and frame"],["mat","Mat only"],["none","Unframed"]]
+    [["default","Match wall"],["frame","Mat + frame"],["mat","Mat only"],["none","Unframed"]]
       .forEach(function(o){
         var op = document.createElement("option");
         op.value = o[0]; op.textContent = o[1];
@@ -1304,45 +1670,50 @@ function drawPieces(){
   });
 }
 
+/* ---------------- render ---------------- */
+
 function drawWall(){
   if (!items.length) return;
   var o = wallInputs();
+  $("shuffleRow").classList.toggle("hide", o.mode !== "salon");
   var W = 560, H = Math.round(W / o.ar);
   var wcv = $("wcv");
   wcv.width = W; wcv.height = H;
   var sizes = sizesFor(o);
-  var pl = placements(sizes, W, H, o.gap, o.rows, o.mounts);
-  if (!pl){ $("hangNote").textContent = "Too many rows for this many works."; return; }
+  var pl = placements(sizes, W, H, o.gap, o.rows, o.mounts, o.mode, o.order);
+  if (!pl){ $("hangNote").textContent = "That many rows needs more works."; return; }
 
-  paintWall(wcv.getContext("2d"), W, H, pl, o.mounts, function(i, w, h){
+  paintWall(wcv.getContext("2d"), W, H, pl, o.mounts, o, function(i, w, h){
     var r = renderRect(items[i], Math.max(2, w), Math.max(2, h));
     return r ? r.canvas : null;
   });
 
   var unknown = sizes.filter(function(s){ return !s.known; }).length;
   var bare = o.mounts.filter(function(m){ return !m.mat && !m.frame; }).length;
-  var bits = [
-    items.length + (items.length === 1 ? " work" : " works"),
-    pl.rows + (pl.rows === 1 ? " row" : " rows"),
-    "hung on a common centre line"
-  ];
+  var shape = o.mode === "circular"
+    ? "arranged in a circle"
+    : pl.rows + (pl.rows === 1 ? " row" : " rows") + " on a common centre line";
+  var bits = [items.length + (items.length === 1 ? " work" : " works"), shape];
   if (bare && bare < items.length) bits.push(bare + " unframed");
   var t = bits.join(" · ") + ".";
+  if (o.mode === "balanced") t += " Balanced packing ignores the arrows — switch to “Rows, in my order” to place works yourself.";
   if (o.trueScale && unknown)
     t += " " + unknown + " sheet" + (unknown === 1 ? " has" : "s have") +
          " no size set, placed at " + FALLBACK_LONG_IN + " in on the long edge.";
   $("hangNote").textContent = t;
 }
 
-["wallShape","rows","scaleMode","matWidth","matColor","frameWidth","frameColor"].forEach(function(id){
+["wallShape","arrange","rows","scaleMode","wallColor","wallTexture",
+ "matWidth","matColor","frameWidth","frameColor","frameTexture"].forEach(function(id){
   $(id).onchange = drawWall;
 });
 $("spacing").oninput = function(){
   $("spacingVal").textContent = this.value;
   drawWall();
 };
+$("btnShuffle").onclick = function(){ salonSeed = (salonSeed * 1103515245 + 12345) >>> 0 || 1; drawWall(); };
 
-/* ---- wall export ---- */
+/* ---------------- export ---------------- */
 
 $("btnWall").onclick = async function(){
   var btn = this;
@@ -1352,7 +1723,7 @@ $("btnWall").onclick = async function(){
   var o = wallInputs();
   var W = 4000, H = Math.round(W / o.ar);
   var sizes = sizesFor(o);
-  var pl = placements(sizes, W, H, o.gap, o.rows, o.mounts);
+  var pl = placements(sizes, W, H, o.gap, o.rows, o.mounts, o.mode, o.order);
   if (!pl){ btn.disabled = false; $("wbar").classList.remove("on"); return; }
 
   var q = Math.max(60, Math.min(100, parseInt($("quality").value, 10) || 95)) / 100;
@@ -1373,7 +1744,7 @@ $("btnWall").onclick = async function(){
 
     var wall = document.createElement("canvas");
     wall.width = W; wall.height = H;
-    paintWall(wall.getContext("2d"), W, H, pl, o.mounts, function(i){ return art[i] || null; });
+    paintWall(wall.getContext("2d"), W, H, pl, o.mounts, o, function(i){ return art[i] || null; });
 
     var blob = await new Promise(function(r){ wall.toBlob(r, "image/jpeg", q); });
     download(await withDPI(blob, 300), "gallery_wall.jpg");
