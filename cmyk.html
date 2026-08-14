@@ -67,6 +67,8 @@
   .push:hover{background:var(--blue-bright);border-color:var(--blue-bright)}
   .push:disabled{opacity:.4;cursor:not-allowed}
   .push:focus-visible{outline:2px solid var(--blue-bright);outline-offset:2px}
+  .sel{background:var(--card);border:1px solid var(--line);color:var(--ink);padding:8px 10px;font-family:var(--mono);font-size:12px;border-radius:6px;cursor:pointer}
+  .sel:focus-visible{outline:2px solid var(--blue-bright);outline-offset:2px}
 
   /* plates */
   #plates{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px;margin-top:22px}
@@ -142,8 +144,17 @@
       <label class="check"><input type="checkbox" id="reg"> Registration marks</label>
     </div>
     <div class="ctl">
+      <label>File type</label>
+      <select class="sel" id="fmt">
+        <option value="png" selected>PNG · lossless</option>
+        <option value="tiff">TIFF · uncompressed</option>
+        <option value="jpeg">JPEG · q95</option>
+        <option value="webp">WebP · q95</option>
+      </select>
+    </div>
+    <div class="ctl">
       <label>&nbsp;</label>
-      <button class="push" id="dlAll">Download all plates</button>
+      <button class="push" id="dlAll">Download all plates (PNG)</button>
     </div>
   </div>
 
@@ -282,11 +293,79 @@
     });
   }
 
+  /* ---- baseline TIFF writer (uncompressed, little-endian) ---- */
+  function encodeTIFF(bytes,w,h,spp,dpi){
+    dpi=dpi||300;
+    var entries=12, ifdOff=8, pos=ifdOff+2+entries*12+4;
+    var bpsOff=0;
+    if(spp>1){bpsOff=pos;pos+=spp*2;if(pos%2)pos++;}
+    var xresOff=pos;pos+=8;
+    var yresOff=pos;pos+=8;
+    var dataOff=pos;
+    var buf=new ArrayBuffer(dataOff+bytes.length),dv=new DataView(buf),u8=new Uint8Array(buf),off=ifdOff;
+    dv.setUint8(0,0x49);dv.setUint8(1,0x49);dv.setUint16(2,42,true);dv.setUint32(4,ifdOff,true);
+    dv.setUint16(off,entries,true);off+=2;
+    function tag(t,type,count,val){
+      dv.setUint16(off,t,true);dv.setUint16(off+2,type,true);dv.setUint32(off+4,count,true);
+      if(type===3&&count===1){dv.setUint16(off+8,val,true);dv.setUint16(off+10,0,true);}
+      else dv.setUint32(off+8,val,true);
+      off+=12;
+    }
+    tag(256,4,1,w);                       // ImageWidth
+    tag(257,4,1,h);                       // ImageLength
+    if(spp===1)tag(258,3,1,8); else tag(258,3,spp,bpsOff);   // BitsPerSample
+    tag(259,3,1,1);                       // Compression: none
+    tag(262,3,1,spp===1?1:2);             // Photometric: BlackIsZero / RGB
+    tag(273,4,1,dataOff);                 // StripOffsets
+    tag(277,3,1,spp);                     // SamplesPerPixel
+    tag(278,4,1,h);                       // RowsPerStrip
+    tag(279,4,1,bytes.length);            // StripByteCounts
+    tag(282,5,1,xresOff);                 // XResolution
+    tag(283,5,1,yresOff);                 // YResolution
+    tag(296,3,1,2);                       // ResolutionUnit: inch
+    dv.setUint32(off,0,true);
+    if(spp>1)for(var s=0;s<spp;s++)dv.setUint16(bpsOff+s*2,8,true);
+    dv.setUint32(xresOff,dpi,true);dv.setUint32(xresOff+4,1,true);
+    dv.setUint32(yresOff,dpi,true);dv.setUint32(yresOff+4,1,true);
+    u8.set(bytes,dataOff);
+    return new Blob([buf],{type:'image/tiff'});
+  }
+  function canvasToTIFF(cvs,gray,dpi){
+    var w=cvs.width,h=cvs.height,n=w*h;
+    var d=cvs.getContext('2d').getImageData(0,0,w,h).data;
+    var spp=gray?1:3,out=new Uint8Array(n*spp);
+    for(var i=0,p=0,q=0;i<n;i++,p+=4){
+      if(gray)out[q++]=d[p];
+      else{out[q++]=d[p];out[q++]=d[p+1];out[q++]=d[p+2];}
+    }
+    return encodeTIFF(out,w,h,spp,dpi);
+  }
+  function saveBlob(blob,name){
+    var a=document.createElement('a'),url=URL.createObjectURL(blob);
+    a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();
+    setTimeout(function(){URL.revokeObjectURL(url);},4000);
+  }
+
+  /* ---- output formats ---- */
+  var FMT={
+    png :{ext:'png', mime:'image/png',  label:'PNG'},
+    tiff:{ext:'tif', mime:'image/tiff', label:'TIFF'},
+    jpeg:{ext:'jpg', mime:'image/jpeg', label:'JPEG', q:0.95},
+    webp:{ext:'webp',mime:'image/webp', label:'WebP', q:0.95}
+  };
+  var fmtSel=document.getElementById('fmt');
+  function canEncode(mime){
+    var c=document.createElement('canvas');c.width=c.height=1;
+    try{return c.toDataURL(mime).indexOf('data:'+mime)===0;}catch(e){return false;}
+  }
+  function curFmt(){return FMT[fmtSel.value]||FMT.png;}
+
   function save(cvs,label){
-    var a=document.createElement('a');
-    a.download='sep_'+label.toLowerCase()+'_'+state.pol+'.png';
-    a.href=cvs.toDataURL('image/png');
-    document.body.appendChild(a);a.click();a.remove();
+    var key=fmtSel.value,f=curFmt();
+    var name='sep_'+label.toLowerCase()+'_'+state.pol+'.'+f.ext;
+    // film plates are true grayscale, so write 1 sample/px; ink previews stay RGB
+    if(key==='tiff'){saveBlob(canvasToTIFF(cvs,state.view==='film',300),name);return;}
+    cvs.toBlob(function(b){if(b)saveBlob(b,name);},f.mime,f.q);
   }
 
   /* ---- controls ---- */
@@ -302,6 +381,10 @@
   seg('segPol',function(v){state.pol=v;render();});
   seg('segView',function(v){state.view=v;render();});
   document.getElementById('reg').addEventListener('change',function(e){state.reg=e.target.checked;render();});
+  if(!canEncode('image/webp')){var wo=fmtSel.querySelector('option[value="webp"]');if(wo)wo.remove();}
+  fmtSel.addEventListener('change',function(){
+    document.getElementById('dlAll').textContent='Download all plates ('+curFmt().label+')';
+  });
   document.getElementById('dlAll').addEventListener('click',function(){
     var cvs=platesEl.querySelectorAll('canvas');var names=(state.useK?CH:CH.slice(0,3));
     [].forEach.call(cvs,function(c,i){setTimeout(function(){save(c,names[i].name);},i*350);});

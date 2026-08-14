@@ -118,6 +118,10 @@
   .act:hover{border-color:var(--blue);color:var(--blue)}
   .act:focus-visible{outline:2px solid var(--blue-bright);outline-offset:1px}
 
+  .sel{font:inherit;font-size:12px;padding:7px 9px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--ink);cursor:pointer}
+  .sel:focus-visible{outline:2px solid var(--blue-bright);outline-offset:1px}
+  .field .sel{flex:1;min-width:0}
+
   #curveCanvas{width:100%;height:186px;display:block;border:1px solid var(--line);border-radius:7px;background:#faf8f2;cursor:crosshair;touch-action:none}
   .curve-note{color:var(--muted);font-size:10.5px;margin-top:6px;font-family:var(--mono)}
   .curve-btns{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
@@ -260,6 +264,19 @@
       </div>
 
       <div class="row">
+        <div class="row-head"><b>Registration</b><span class="tag-help">ALIGN</span></div>
+        <span class="title">Adds a margin outside the frame carrying alignment targets. Geometry is identical on every export, so multi-layer or multi-exposure prints stack.</span>
+        <label class="toggle" style="margin-bottom:4px"><input type="checkbox" id="regOn"><span class="switch"></span><span class="tl">Registration marks</span></label>
+        <div class="field"><label>Marks</label><select class="sel" id="regStyle">
+          <option value="target">Targets</option>
+          <option value="corner">Corner crops</option>
+          <option value="both" selected>Targets + corners</option>
+        </select></div>
+        <div class="field"><label>Margin</label><input type="range" id="regMargin" min="2" max="15" step="0.5" value="6"><span class="val" id="regMarginV">6%</span></div>
+        <label class="toggle" style="margin-top:6px"><input type="checkbox" id="regDark"><span class="switch"></span><span class="tl">Dark surround (marks print clear)</span></label>
+      </div>
+
+      <div class="row">
         <table class="report" id="report">
           <caption>Negative report</caption>
           <tbody id="reportBody"></tbody>
@@ -267,11 +284,17 @@
       </div>
 
       <div class="row">
+        <div class="field" style="margin-top:0"><label>File type</label><select class="sel" id="fmtSel">
+          <option value="png" selected>PNG · 8-bit lossless</option>
+          <option value="tiff">TIFF · 8-bit uncompressed</option>
+          <option value="jpeg">JPEG · quality 95</option>
+          <option value="webp">WebP · quality 95</option>
+        </select></div>
         <div class="stack">
           <button class="btn" id="exportBtn" disabled>Export negative (PNG)</button>
           <button class="btn danger" id="resetBtn">Reset all</button>
         </div>
-        <p class="foot-note">Preview is downscaled for speed. Export re-runs the <b>full pipeline at native resolution</b>.</p>
+        <p class="foot-note">Preview is downscaled for speed. Export re-runs the <b>full pipeline at native resolution</b>. TIFF is uncompressed grayscale tagged <b>300 dpi</b> — large, but what most RIPs and Photoshop want.</p>
       </div>
     </aside>
   </div>
@@ -293,7 +316,8 @@
     sharpAmt:0, sharpRad:2,
     points:[{x:0,y:0},{x:0.75,y:0.78},{x:1,y:0.9}],
     outBlack:0, outWhite:255,
-    invert:true
+    invert:true,
+    regOn:false, regStyle:"both", regMargin:6, regDark:false
   };
 
   var $=function(id){return document.getElementById(id);};
@@ -304,6 +328,7 @@
    "sharpAmt","sharpAmtV","sharpRad","sharpRadV",
    "outBlack","outBlackV","outWhite","outWhiteV","invertOn",
    "curveCanvas","curveReadout","exportBtn","resetBtn",
+   "regOn","regStyle","regMargin","regMarginV","regDark","fmtSel",
    "histCanvas","histStat","dimReadout","splitHandle","viewMode","orientRow","reportBody"]
    .forEach(function(id){els[id]=$(id);});
 
@@ -464,19 +489,110 @@
     return img;
   }
 
+  // ---------- baseline TIFF writer (uncompressed, little-endian) ----------
+  function encodeTIFF(bytes,w,h,spp,dpi){
+    dpi=dpi||300;
+    var entries=12, ifdOff=8, pos=ifdOff+2+entries*12+4;
+    var bpsOff=0;
+    if(spp>1){bpsOff=pos;pos+=spp*2;if(pos%2)pos++;}
+    var xresOff=pos;pos+=8;
+    var yresOff=pos;pos+=8;
+    var dataOff=pos;
+    var buf=new ArrayBuffer(dataOff+bytes.length),dv=new DataView(buf),u8=new Uint8Array(buf),off=ifdOff;
+    dv.setUint8(0,0x49);dv.setUint8(1,0x49);dv.setUint16(2,42,true);dv.setUint32(4,ifdOff,true);
+    dv.setUint16(off,entries,true);off+=2;
+    function tag(t,type,count,val){
+      dv.setUint16(off,t,true);dv.setUint16(off+2,type,true);dv.setUint32(off+4,count,true);
+      if(type===3&&count===1){dv.setUint16(off+8,val,true);dv.setUint16(off+10,0,true);}
+      else dv.setUint32(off+8,val,true);
+      off+=12;
+    }
+    tag(256,4,1,w);                       // ImageWidth
+    tag(257,4,1,h);                       // ImageLength
+    if(spp===1)tag(258,3,1,8); else tag(258,3,spp,bpsOff);   // BitsPerSample
+    tag(259,3,1,1);                       // Compression: none
+    tag(262,3,1,spp===1?1:2);             // Photometric: BlackIsZero / RGB
+    tag(273,4,1,dataOff);                 // StripOffsets
+    tag(277,3,1,spp);                     // SamplesPerPixel
+    tag(278,4,1,h);                       // RowsPerStrip
+    tag(279,4,1,bytes.length);            // StripByteCounts
+    tag(282,5,1,xresOff);                 // XResolution
+    tag(283,5,1,yresOff);                 // YResolution
+    tag(296,3,1,2);                       // ResolutionUnit: inch
+    dv.setUint32(off,0,true);             // no further IFDs
+    if(spp>1)for(var s=0;s<spp;s++)dv.setUint16(bpsOff+s*2,8,true);
+    dv.setUint32(xresOff,dpi,true);dv.setUint32(xresOff+4,1,true);
+    dv.setUint32(yresOff,dpi,true);dv.setUint32(yresOff+4,1,true);
+    u8.set(bytes,dataOff);
+    return new Blob([buf],{type:"image/tiff"});
+  }
+  function canvasToTIFF(cvs,gray,dpi){
+    var w=cvs.width,h=cvs.height,n=w*h;
+    var d=cvs.getContext("2d").getImageData(0,0,w,h).data;
+    var spp=gray?1:3,out=new Uint8Array(n*spp);
+    for(var i=0,p=0,q=0;i<n;i++,p+=4){
+      if(gray)out[q++]=d[p];
+      else{out[q++]=d[p];out[q++]=d[p+1];out[q++]=d[p+2];}
+    }
+    return encodeTIFF(out,w,h,spp,dpi);
+  }
+  function saveBlob(blob,name){
+    var a=document.createElement("a"),url=URL.createObjectURL(blob);
+    a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();
+    setTimeout(function(){URL.revokeObjectURL(url);},4000);
+  }
+
+  // ---------- registration marks ----------
+  function marginFor(w,h){return params.regOn?Math.max(8,Math.round(Math.min(w,h)*params.regMargin/100)):0;}
+  function drawMarks(g,w,h,m){
+    if(!m)return;
+    g.strokeStyle=params.regDark?"#fff":"#000";
+    g.lineWidth=Math.max(1,Math.round(Math.min(w,h)*0.0035));
+    var st=params.regStyle,r=Math.max(4,m*0.34);
+    if(st==="target"||st==="both"){
+      var cx=m+w/2,cy=m+h/2;
+      [[cx,m/2],[cx,m+h+m/2],[m/2,cy],[m+w+m/2,cy]].forEach(function(pt){
+        g.beginPath();
+        g.moveTo(pt[0]-r,pt[1]);g.lineTo(pt[0]+r,pt[1]);
+        g.moveTo(pt[0],pt[1]-r);g.lineTo(pt[0],pt[1]+r);
+        g.stroke();
+        g.beginPath();g.arc(pt[0],pt[1],r*0.55,0,Math.PI*2);g.stroke();
+      });
+    }
+    if(st==="corner"||st==="both"){
+      var gap=Math.max(2,m*0.18),len=Math.max(6,m*0.5);
+      [[m,m,-1,-1],[m+w,m,1,-1],[m,m+h,-1,1],[m+w,m+h,1,1]].forEach(function(q){
+        var x=q[0],y=q[1],sx=q[2],sy=q[3];
+        g.beginPath();
+        g.moveTo(x+sx*gap,y);g.lineTo(x+sx*(gap+len),y);
+        g.moveTo(x,y+sy*gap);g.lineTo(x,y+sy*(gap+len));
+        g.stroke();
+      });
+    }
+  }
+  // paints a luminance buffer into a canvas, adding the registration margin if enabled
+  function composite(cvs,ctx,L,w,h){
+    var m=marginFor(w,h);
+    cvs.width=w+2*m;cvs.height=h+2*m;
+    if(m){ctx.fillStyle=params.regDark?"#000":"#fff";ctx.fillRect(0,0,cvs.width,cvs.height);}
+    ctx.putImageData(lumToImageData(L,w,h),m,m);
+    drawMarks(ctx,w,h,m);
+    return m;
+  }
+
   // ---------- render ----------
   var pending=false;
   function scheduleRender(){if(pending)return;pending=true;requestAnimationFrame(function(){pending=false;render();});}
   function render(){
     if(!work.lum)return;
     var w=work.w,h=work.h;
-    els.origCanvas.width=w;els.origCanvas.height=h;
-    octx.putImageData(lumToImageData(work.lum,w,h),0,0);
+    composite(els.origCanvas,octx,work.lum,w,h);
     var out=runPipeline(work.lum,w,h,1);
-    els.procCanvas.width=w;els.procCanvas.height=h;
-    pctx.putImageData(lumToImageData(out,w,h),0,0);
+    composite(els.procCanvas,pctx,out,w,h);
     drawHistogram(out);
     updateReport();
+    var M=marginFor(nativeDim.w,nativeDim.h);
+    els.dimReadout.textContent=nativeDim.w+" × "+nativeDim.h+" px"+(M?(" · exports "+(nativeDim.w+2*M)+" × "+(nativeDim.h+2*M)):"");
     setView(currentView);
   }
 
@@ -503,6 +619,7 @@
     o.push(["Sharpen",params.sharpAmt>0?(params.sharpAmt+"% · r"+params.sharpRad):"off"]);
     o.push(["Curve",params.points.length+" pts"]);
     o.push(["Output",params.outBlack+"–"+params.outWhite+(params.invert?" · inverted":"")]);
+    o.push(["Registration",params.regOn?({target:"targets",corner:"corner crops",both:"targets + corners"}[params.regStyle]+" · margin "+params.regMargin+"%"+(params.regDark?" · dark surround":"")):"off"]);
     var html="";for(var i=0;i<o.length;i++)html+="<tr><td>"+o[i][0]+"</td><td>"+o[i][1]+"</td></tr>";
     els.reportBody.innerHTML=html;
   }
@@ -581,15 +698,34 @@
   }
 
   // ---------- export ----------
-  function exportPNG(){
-    if(!srcLumFull)return;els.exportBtn.textContent="Rendering…";els.exportBtn.disabled=true;
+  var FMT={
+    png :{ext:"png", mime:"image/png",  label:"PNG"},
+    tiff:{ext:"tif", mime:"image/tiff", label:"TIFF"},
+    jpeg:{ext:"jpg", mime:"image/jpeg", label:"JPEG", q:0.95},
+    webp:{ext:"webp",mime:"image/webp", label:"WebP", q:0.95}
+  };
+  function canEncode(mime){
+    var c=document.createElement("canvas");c.width=c.height=1;
+    try{return c.toDataURL(mime).indexOf("data:"+mime)===0;}catch(e){return false;}
+  }
+  function curFmt(){return FMT[els.fmtSel.value]||FMT.png;}
+  function exportBtnLabel(){els.exportBtn.textContent="Export negative ("+curFmt().label+")";}
+  function exportImage(){
+    if(!srcLumFull)return;
+    var f=curFmt(),isTiff=(els.fmtSel.value==="tiff");
+    els.exportBtn.textContent="Rendering…";els.exportBtn.disabled=true;
     setTimeout(function(){
       var rs=nativeDim.w/work.w;
       var out=runPipeline(srcLumFull,nativeDim.w,nativeDim.h,rs);
-      var c=document.createElement("canvas");c.width=nativeDim.w;c.height=nativeDim.h;
-      c.getContext("2d").putImageData(lumToImageData(out,nativeDim.w,nativeDim.h),0,0);
-      c.toBlob(function(blob){var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="solat-negative.png";a.click();URL.revokeObjectURL(a.href);
-        els.exportBtn.textContent="Export negative (PNG)";els.exportBtn.disabled=false;},"image/png");
+      var c=document.createElement("canvas"),x=c.getContext("2d");
+      composite(c,x,out,nativeDim.w,nativeDim.h);
+      var name="solat-negative"+(params.regOn?"-reg":"")+"."+f.ext;
+      function done(){exportBtnLabel();els.exportBtn.disabled=false;}
+      if(isTiff){saveBlob(canvasToTIFF(c,true,300),name);done();return;}
+      c.toBlob(function(blob){
+        if(blob)saveBlob(blob,name);
+        done();
+      },f.mime,f.q);
     },30);
   }
 
@@ -604,6 +740,7 @@
     els.sharpRadV.textContent=params.sharpRad+" px";
     els.outBlackV.textContent=params.outBlack;
     els.outWhiteV.textContent=params.outWhite;
+    els.regMarginV.textContent=params.regMargin+"%";
   }
   els.loadBtn.onclick=function(){els.fileInput.click();};
   els.dropzone.onclick=function(){els.fileInput.click();};
@@ -631,6 +768,14 @@
   els.outWhite.oninput=function(){params.outWhite=parseInt(this.value);if(params.outWhite<params.outBlack){params.outBlack=params.outWhite;els.outBlack.value=params.outBlack;}labels();scheduleRender();};
   els.invertOn.onchange=function(){params.invert=this.checked;scheduleRender();};
 
+  els.regOn.onchange=function(){params.regOn=this.checked;scheduleRender();};
+  els.regStyle.onchange=function(){params.regStyle=this.value;scheduleRender();};
+  els.regMargin.oninput=function(){params.regMargin=parseFloat(this.value);labels();scheduleRender();};
+  els.regDark.onchange=function(){params.regDark=this.checked;scheduleRender();};
+
+  if(!canEncode("image/webp")){var wo=els.fmtSel.querySelector('option[value="webp"]');if(wo)wo.remove();}
+  els.fmtSel.onchange=exportBtnLabel;
+
   els.curveCanvas.addEventListener("mousedown",cDown);
   els.curveCanvas.addEventListener("touchstart",cDown,{passive:false});
   els.curveCanvas.addEventListener("dblclick",cDbl);
@@ -641,17 +786,19 @@
   els.splitHandle.addEventListener("mousedown",sDown);
   els.splitHandle.addEventListener("touchstart",sDown,{passive:false});
 
-  els.exportBtn.onclick=exportPNG;
+  els.exportBtn.onclick=exportImage;
   els.resetBtn.onclick=function(){
     params.bri=0;params.con=1;params.gam=1;params.claheOn=true;params.clip=3.0;params.tiles=8;
     params.sharpAmt=0;params.sharpRad=2;params.outBlack=0;params.outWhite=255;params.invert=true;
+    params.regOn=false;params.regStyle="both";params.regMargin=6;params.regDark=false;
     params.points=presets.highlights.map(function(p){return{x:p.x,y:p.y};});
     els.bri.value=0;els.con.value=1;els.gam.value=1;els.claheOn.checked=true;els.claheClip.value=3.0;els.claheTiles.value=8;
     els.sharpAmt.value=0;els.sharpRad.value=2;els.outBlack.value=0;els.outWhite.value=255;els.invertOn.checked=true;
+    els.regOn.checked=false;els.regStyle.value="both";els.regMargin.value=6;els.regDark.checked=false;
     labels();drawCurve();scheduleRender();
   };
 
-  labels();drawCurve();updateReport();
+  labels();drawCurve();updateReport();exportBtnLabel();
 })();
 </script>
 </body>
