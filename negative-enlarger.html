@@ -5,66 +5,111 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Negative Enlarger · The Cyanotype Network</title>
 <style>
+/* ---- tokens: taken from the Network's style.css :root ---- */
 :root{
-  --room:#1e1f22; --panel:#2a2b2f; --edge:#3a3b40; --ink:#ebe9e3; --muted:#a3a098;
-  --safelight:#e8a13a; --table:#fbfbf8; --nonprint:#d6d6d2;
-  --r:6px;
-  box-sizing:border-box;
-  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+  --ink:#14171a; --gray:#66757f; --faint:#8899a6;
+  --divider:#e6e2d8; --paper:#fcfbf7; --chip:#f6f4ee;
+  --prussian:#16385c; --prussian-deep:#0e2a47; --prussian-wash:#eef3f8;
+  --help:#8a5a1e; --help-bg:#faf3e6;
+  --live:#1f7a4d; --danger:#8a1e1e;
+  --nonprint:#d6d6d2;
 }
-*,*::before,*::after{box-sizing:inherit}
-html,body{margin:0;background:var(--room);color:var(--ink);
-  font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-variant-numeric:tabular-nums}
-.app{display:grid;grid-template-columns:320px 1fr;min-height:100vh}
-@media (max-width:820px){.app{grid-template-columns:1fr}}
-aside{background:var(--panel);border-right:1px solid var(--edge);padding:20px 18px 28px}
-h1{font-size:22px;margin:0 0 2px;font-weight:650;letter-spacing:-.01em}
-.sub{color:var(--muted);margin:0 0 20px;font-size:13.5px}
-fieldset{border:0;border-top:1px solid var(--edge);margin:0;padding:14px 0 6px}
-legend{padding:0;font-weight:600;font-size:14px;margin-bottom:8px}
-label{display:block;font-size:13px;color:var(--muted);margin:10px 0 4px}
-select,input[type=number]{width:100%;background:var(--room);color:var(--ink);border:1px solid var(--edge);
-  border-radius:var(--r);padding:8px 10px;font:inherit}
-input[type=range]{width:100%;accent-color:var(--safelight)}
-.row{display:flex;gap:10px}.row>div{flex:1}
-.check{display:flex;align-items:center;gap:8px;color:var(--ink);font-size:14px;margin:8px 0}
-.check input{accent-color:var(--safelight);width:16px;height:16px}
-button{font:inherit;border-radius:var(--r);cursor:pointer}
-.primary{width:100%;background:var(--safelight);color:#241703;border:0;padding:12px;font-weight:650;margin-top:16px}
-.primary:disabled{opacity:.45;cursor:not-allowed}
-.ghost{background:transparent;color:var(--safelight);border:1px solid var(--safelight);padding:6px 10px;font-size:13px}
-:focus-visible{outline:2px solid var(--safelight);outline-offset:2px}
-.readout{font-size:13px;color:var(--muted);margin-top:6px}
-.readout b{color:var(--ink);font-weight:600}
-.hint{background:#3a2f1c;border:1px solid #6a5122;border-radius:var(--r);padding:10px;font-size:13px;margin-top:10px;display:none}
-.hint.on{display:block}
-.hint button{margin-top:8px}
-details summary{cursor:pointer;font-weight:600;font-size:14px;padding:14px 0 6px;border-top:1px solid var(--edge)}
-details p{font-size:12.5px;color:var(--muted);margin:6px 0 0}
-main{padding:22px;min-width:0}
-.table{background:var(--table);border-radius:10px;padding:18px;color:#222;min-height:320px}
-.drop{border:2px dashed #b9b8b2;border-radius:8px;min-height:280px;display:flex;flex-direction:column;
-  align-items:center;justify-content:center;gap:10px;text-align:center;color:#555;padding:20px}
-.drop.over{border-color:var(--safelight);background:#fff6e6}
-.drop strong{color:#222;font-size:17px}
-.stage h2{font-size:15px;margin:0 0 4px;color:#222}
-.stage .meta{font-size:13px;color:#666;margin:0 0 12px}
-#assembly{display:block;max-width:100%;margin:0 auto 22px;background:#fff}
-.sheets{display:grid;gap:14px;align-items:start}
-.sheet figure{margin:0}
-.sheet canvas{width:100%;height:auto;display:block;box-shadow:0 0 0 1px #c9c8c2}
-.sheet figcaption{font-size:12px;color:#555;margin-top:4px}
-.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:#555;margin:0 0 14px}
-.sw{display:inline-block;width:14px;height:10px;vertical-align:-1px;margin-right:5px;border:1px solid #bbb}
-.status{font-size:13px;color:var(--muted);margin-top:8px;min-height:1.2em}
-.hidden{display:none!important}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  background:var(--chip); color:var(--ink); font-size:16px; line-height:1.45;
+  font-variant-numeric:tabular-nums;
+}
+.masthead{
+  font-family:Georgia,'Times New Roman',serif; letter-spacing:.06em; font-size:17px;
+  color:var(--prussian); padding:12px 14px 8px; background:var(--paper);
+  border-bottom:1px solid var(--divider);
+}
+.app{ display:grid; grid-template-columns:340px 1fr; max-width:1200px; margin:0 auto;
+  background:var(--paper); border-left:1px solid var(--divider); border-right:1px solid var(--divider); min-height:100vh; }
+@media (max-width:820px){ .app{ grid-template-columns:1fr; } }
+aside{ border-right:1px solid var(--divider); }
+@media (max-width:820px){ aside{ border-right:0; border-bottom:1px solid var(--divider); } }
+.page-head{ padding:14px; border-bottom:1px solid var(--divider); }
+h1{ font-size:18px; }
+.sub{ font-size:14px; color:var(--gray); margin-top:2px; }
+fieldset{ border:0; border-bottom:1px solid var(--divider); padding:14px; }
+legend{ float:left; width:100%; font-size:13px; color:var(--gray); font-variant:small-caps;
+  letter-spacing:.04em; margin-bottom:10px; }
+legend + *{ clear:both; }
+label{ display:block; font-size:13px; color:var(--gray); margin:10px 0 4px;
+  font-variant:small-caps; letter-spacing:.04em; }
+select,input[type=number]{
+  font:inherit; font-size:15px; width:100%; padding:9px 10px; min-height:44px;
+  border:1px solid var(--divider); border-radius:6px; background:var(--paper); color:var(--ink);
+}
+input[type=range]{ width:100%; accent-color:var(--prussian); min-height:32px; }
+.row{ display:flex; gap:10px; }
+.row>div{ flex:1; }
+.check{ display:flex; align-items:center; gap:8px; font-size:14px; color:var(--ink);
+  margin-top:6px; cursor:pointer; min-height:44px; font-variant:normal; letter-spacing:0; }
+.check input{ width:20px; height:20px; accent-color:var(--prussian); flex:0 0 auto; }
+button{ font:inherit; cursor:pointer; }
+.ghost{ font-size:15px; font-weight:600; min-height:44px; padding:9px 14px; border-radius:6px;
+  border:1px solid var(--prussian); background:transparent; color:var(--prussian); }
+.ghost:disabled{ color:var(--gray); border-color:var(--divider); cursor:default; }
+.primary{ display:block; width:calc(100% - 28px); margin:14px; font-size:15px; font-weight:600;
+  min-height:44px; padding:11px; border-radius:6px; border:1px solid var(--prussian);
+  background:var(--prussian); color:#fff; }
+.primary:disabled{ opacity:.45; cursor:default; }
+:focus-visible{ outline:2px solid var(--prussian); outline-offset:2px; }
+.readout{ font-size:14px; color:var(--gray); margin-top:8px; }
+.readout b{ color:var(--ink); font-weight:600; }
+.hint{ display:none; font-size:13px; color:var(--help); background:var(--help-bg);
+  border:1px solid #eadfc8; border-radius:4px; padding:9px 10px; margin-top:10px; }
+.hint.on{ display:block; }
+.hint button{ margin-top:8px; }
+details{ border-bottom:1px solid var(--divider); padding:0 14px 14px; }
+details summary{ cursor:pointer; font-size:13px; color:var(--gray); font-variant:small-caps;
+  letter-spacing:.04em; padding:14px 0 4px; min-height:44px; }
+details p{ font-size:13px; color:var(--gray); margin-top:8px; }
+.status{ font-size:13px; color:var(--gray); margin:0 14px 14px; min-height:1.2em; }
+main{ padding:14px; min-width:0; }
+.table{ min-height:320px; }
+.drop{ border:1px dashed var(--divider); border-radius:6px; background:var(--chip);
+  padding:28px 16px; min-height:280px; display:flex; flex-direction:column; align-items:center;
+  justify-content:center; gap:6px; text-align:center; color:var(--gray); font-size:15px; cursor:pointer; }
+.drop:hover,.drop.over{ border-color:var(--prussian); background:var(--prussian-wash); color:var(--ink); }
+.drop strong{ color:var(--prussian); }
+.stage h2{ font-size:13px; font-weight:400; color:var(--gray); font-variant:small-caps;
+  letter-spacing:.04em; margin-bottom:6px; }
+.stage .meta{ font-size:14px; color:var(--ink); margin-bottom:10px; }
+#assembly{ display:block; max-width:100%; margin:0 auto 22px; background:#fff; }
+.sheets{ display:grid; gap:12px; align-items:start; }
+.sheet figure{ margin:0; }
+.sheet canvas{ width:100%; height:auto; display:block; border:1px solid var(--divider); border-radius:3px; }
+.sheet figcaption{ font-size:13px; color:var(--gray); margin-top:4px; }
+.legend{ display:flex; flex-wrap:wrap; gap:14px; font-size:13px; color:var(--gray); margin-bottom:12px; }
+.sw{ display:inline-block; width:14px; height:10px; vertical-align:-1px; margin-right:5px;
+  border:1px solid var(--divider); border-radius:2px; }
+.hidden{ display:none !important; }
+@media (prefers-reduced-motion:reduce){ *{ transition:none !important; } }
 </style>
 </head>
 <body>
+
+<div class="masthead">NEGATIVE ENLARGER</div>
+<script>
+/* Hide the masthead when embedded in the app shell, matching the other tools. */
+if (window.self !== window.top) {
+  var _m = document.querySelector('.masthead');
+  if (_m) _m.style.display = 'none';
+  document.body.style.background = 'transparent';
+}
+</script>
+
 <div class="app">
 <aside>
-  <h1>Negative Enlarger</h1>
-  <p class="sub">Print a large negative on a home printer, one sheet at a time, then cut and join.</p>
+  <div class="page-head">
+    <h1>Negative Enlarger</h1>
+    <p class="sub">Print a large negative on a home printer, one sheet at a time, then cut and join.</p>
+  </div>
 
   <fieldset>
     <legend>Negative</legend>
