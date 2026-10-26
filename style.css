@@ -315,3 +315,18 @@ footer{ max-width:600px; margin:0 auto; padding:16px; color:var(--gray); font-si
     max-width: 1200px;
   }
 }
+
+/* ---- icon set A ---- */
+.wordmark{ display:flex; align-items:center; gap:10px;}
+.wordmark .mark-tile{ width:32px; height:32px; flex:0 0 auto; display:block;}
+.wordmark .wm-text{ color:var(--prussian); overflow:hidden; text-overflow:ellipsis;}
+.wordmark .wm-text span{ color:var(--faint);}
+.dd-item.has-ico,.sheet-item.has-ico{ display:flex; align-items:center; gap:12px; --ico-bg:var(--paper);}
+.dd-item.has-ico:hover,.dd-item.has-ico:focus-visible,.dd-item.has-ico.active,.sheet-item.has-ico.active{ --ico-bg:var(--prussian-wash);}
+.has-ico .ico{ width:30px; height:30px; flex:0 0 auto; color:var(--prussian);}
+.has-ico .dd-txt{ min-width:0;}
+.sheet-item.has-ico .ico{ width:32px; height:32px;}
+.tabbar svg.tb{ width:24px; height:24px; --ico-bg:var(--paper);}
+.dd-item[data-nav="account"]{ padding-left:54px;}
+.sheet-item[data-nav="account"]{ padding-left:56px;}
+.tabbar svg{ width:24px; height:24px;}
