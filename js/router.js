@@ -14,6 +14,7 @@ const Router = {
     cmyk:      (v)      => Separations.render(v),
     account:   (v)      => Mine.account(v),
     gallerybench: (v)   => GalleryBench.render(v),
+    tags:      (v)      => TagMaker.render(v),
     enlarger:  (v)      => Enlarger.render(v),
   },
 
