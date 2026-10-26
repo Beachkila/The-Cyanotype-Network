@@ -2564,19 +2564,6 @@ const TagEngine = (() => {
     }
   }
 
-  function drawBarcode(ctx, x, y, w, h, color) {
-    ctx.fillStyle = color;
-    const pattern = [3, 2, 1, 2, 4, 1, 1, 3, 2, 1, 1, 2, 3, 1, 2, 2, 1, 4, 1, 1, 2, 3, 1, 2];
-    let cx = x, i = 0;
-    while (cx < x + w) {
-      const bar = pattern[i % pattern.length] * 6;
-      const space = pattern[(i + 7) % pattern.length] * 5;
-      ctx.fillRect(cx, y, bar, h);
-      cx += bar + space;
-      i++;
-    }
-  }
-
   function drawPanel(ctx, c) {
     // square outer corners: the frame runs to the edge for trimming
     ctx.fillStyle = c.frame;
@@ -2629,7 +2616,6 @@ const TagEngine = (() => {
     text(ctx, med, left, top + 700, `${medSize}px ${PLAIN}`, c.soft);
 
     if (q) drawQR(ctx, q, right - qrSize, top + 20, qrSize, c.ink);
-    drawBarcode(ctx, left, FACE.y + FACE.h - 210, 760, 110, c.ink);
   }
 
   function frontMuseum(ctx, d, c, q) {
