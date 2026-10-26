@@ -111,8 +111,10 @@ const Mine = {
           <input id="u-uvi" type="text" maxlength="20" value="${esc(v.uvi || "")}" placeholder="e.g. 8">
           <label for="u-paper">Paper or surface <span class="opt">(optional)</span></label>
           <input id="u-paper" type="text" maxlength="120" value="${esc(v.paper || "")}" placeholder="e.g. Canson XL watercolor">
-          <label>Tag style <span class="opt">(shown with your print in the feed)</span></label>
-          <div class="tag-picker" id="tagPicker"></div>
+          <div id="tagPickerWrap" hidden>
+            <label>Tag style <span class="opt">(shown with your print in the feed)</span></label>
+            <div class="tag-picker" id="tagPicker"></div>
+          </div>
           <label for="u-notes">Notes <span class="opt">(optional)</span></label>
           <textarea id="u-notes" maxlength="2000" placeholder="Formula, toning, what worked, what didn't">${esc(v.notes || "")}</textarea>
           <label class="check"><input id="u-comments" type="checkbox" ${v.allow_comments === false ? "" : "checked"}> Allow comments</label>
@@ -137,6 +139,9 @@ const Mine = {
     ["#u-title", "#u-paper"].forEach(sel => view.querySelector(sel).addEventListener("input", () => picker.redraw()));
     sb.from("profiles").select("display_name").eq("id", DB.uid()).maybeSingle()
       .then(({ data }) => { artistName = data?.display_name || ""; picker.redraw(); });
+    // Only offer the picker once the database can save the choice.
+    const tagsReady = FeedTags.columnReady();
+    tagsReady.then(ok => { view.querySelector("#tagPickerWrap").hidden = !ok; });
 
     const save = async (status) => {
       const msg = view.querySelector("#upMsg");
@@ -164,9 +169,9 @@ const Mine = {
           asking_help: view.querySelector("#u-help").checked,
           status,
           review_note: null,
-          submitted_at: status === "submitted" ? new Date().toISOString() : null,
-          tag_style: picker.value()
+          submitted_at: status === "submitted" ? new Date().toISOString() : null
         };
+        if (await tagsReady) fields.tag_style = picker.value();
         const write = (f) => existing
           ? sb.from("prints").update(f).eq("id", existing.id)
           : sb.from("prints").insert({ owner: DB.uid(), ...f });

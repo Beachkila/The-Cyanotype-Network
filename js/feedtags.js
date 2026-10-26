@@ -75,5 +75,18 @@ const FeedTags = {
   // tag_style may not exist in the database yet; these let the app keep working until it does.
   missingColumn(error) {
     return !!error && /tag_style/i.test(error.message || "");
+  },
+
+  // true once supabase/stage5_tag_style.sql has been run (checked once per visit)
+  _hasColumn: null,
+  async columnReady() {
+    if (FeedTags._hasColumn !== null) return FeedTags._hasColumn;
+    try {
+      const { error } = await sb.from("prints").select("tag_style").limit(1);
+      FeedTags._hasColumn = !error;
+    } catch (e) {
+      FeedTags._hasColumn = false;
+    }
+    return FeedTags._hasColumn;
   }
 };
