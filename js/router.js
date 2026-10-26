@@ -29,25 +29,30 @@ const Router = {
   async handle() {
     const { name, arg } = Router.current();
     if (!DB.session) {
-      Shell.signedOut();
+      Router.safe(() => Shell.signedOut());
       Auth.render(Router.view);
       return;
     }
-    Shell.signedIn();
+    Router.safe(() => Shell.signedIn());
     const fn = Router.routes[name] || Router.routes.feed;
     const tab = { print: "feed", upload: "mine", edit: "mine" }[name] || name;
-    Shell.setActive(tab, name);
+    Router.safe(() => Shell.setActive(tab, name));
     window.scrollTo({ top: 0 });
     await fn(Router.view, arg);
   },
 
-  onAuthChange() { Router.handle(); }
+  onAuthChange() { Router.handle(); },
+
+  // The menus should never be able to stop a page from loading.
+  safe(fn) {
+    try { fn(); } catch (e) { console.error("Menu error:", e); }
+  }
 };
 
 window.addEventListener("hashchange", () => Router.handle());
 window.addEventListener("DOMContentLoaded", async () => {
   Router.view = document.getElementById("view");
-  Shell.init();
+  Router.safe(() => Shell.init());
   await DB.init();
   Router.handle();
 });

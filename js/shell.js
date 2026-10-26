@@ -18,6 +18,7 @@ const Shell = {
     // Desktop dropdowns (Tools, Learn, profile)
     document.querySelectorAll(".menu-btn").forEach(btn => {
       const dd = document.getElementById(btn.getAttribute("aria-controls"));
+      if (!dd) return;
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
         const open = dd.hidden;
@@ -30,17 +31,19 @@ const Shell = {
     // Phone sheets (Tools, Learn, More)
     document.querySelectorAll("[data-sheet]").forEach(btn => {
       const sheet = document.getElementById(btn.dataset.sheet);
+      if (!sheet) return;
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
         const open = sheet.hidden;
         Shell.closeAll();
         sheet.hidden = !open;
-        document.getElementById("sheetBackdrop").hidden = !open;
+        if (backdrop) backdrop.hidden = !open;
         btn.setAttribute("aria-expanded", String(open));
         btn.classList.toggle("open", open);
       });
     });
-    document.getElementById("sheetBackdrop").addEventListener("click", () => Shell.closeAll());
+    const backdrop = document.getElementById("sheetBackdrop");
+    if (backdrop) backdrop.addEventListener("click", () => Shell.closeAll());
 
     // Outside links in menus and sheets close them too.
     document.querySelectorAll(".dropdown a, .sheet a").forEach(a => a.addEventListener("click", () => Shell.closeAll()));
@@ -69,14 +72,14 @@ const Shell = {
 
   signedOut() {
     Shell.closeAll();
-    ["mainNav", "topRight", "tabBar"].forEach(id => { document.getElementById(id).hidden = true; });
+    ["mainNav", "topRight", "tabBar"].forEach(id => { const el = document.getElementById(id); if (el) el.hidden = true; });
     document.body.classList.remove("signed-in");
     Shell._uv = null;
     Shell._initial = null;
   },
 
   signedIn() {
-    ["mainNav", "topRight", "tabBar"].forEach(id => { document.getElementById(id).hidden = false; });
+    ["mainNav", "topRight", "tabBar"].forEach(id => { const el = document.getElementById(id); if (el) el.hidden = false; });
     document.body.classList.add("signed-in");
     Shell.loadInitial();
   },
@@ -98,6 +101,7 @@ const Shell = {
   async loadInitial() {
     if (Shell._initial) return;
     const btn = document.getElementById("avatarBtn");
+    if (!btn) return;
     try {
       const { data } = await sb.from("profiles").select("display_name").eq("id", DB.uid()).maybeSingle();
       const name = (data && data.display_name) || "";
@@ -113,6 +117,7 @@ const Shell = {
   // UV chip: today's peak UV at the member's saved Forecast location.
   async updateUV() {
     const chip = document.getElementById("uvChip");
+    if (!chip) return;
     const text = chip.querySelector(".uv-text");
     const paint = (v) => {
       text.innerHTML = v.html;
