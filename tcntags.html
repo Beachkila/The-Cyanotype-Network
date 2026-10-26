@@ -42,8 +42,11 @@ section{ padding:14px; border-bottom:1px solid var(--divider); }
 
 /* ---- preview ---- */
 .preview{ background:var(--chip); border:1px solid var(--divider); border-radius:6px; padding:10px; }
-.preview canvas{ display:block; width:100%; height:auto; border-radius:3px; }
-.preview canvas + canvas{ margin-top:8px; }
+.preview{ padding:16px 10px; }
+/* shown at printed size: the print template places each tag at 2.76 x 0.79 in */
+.preview canvas{ display:block; width:2.76in; max-width:100%; height:auto; margin:0 auto; }
+.preview canvas + canvas{ margin-top:6px; }
+.preview .size{ text-align:center; font-size:12px; color:var(--faint); margin-top:10px; }
 .note{ font-size:13px; color:var(--gray); margin-top:8px; }
 
 /* ---- controls ---- */
@@ -94,6 +97,10 @@ input::placeholder{ color:var(--faint); }
   .sticky{ position:sticky; top:0; z-index:2; background:var(--paper); }
 }
 @media (prefers-reduced-motion:reduce){ *{ transition:none !important; } }
+/* ---- desktop: widen the column to match the rest of the Network ---- */
+@media (min-width: 900px){
+  .wrap{ max-width:1200px; }
+}
 </style>
 </head>
 <body>
@@ -109,6 +116,7 @@ input::placeholder{ color:var(--faint); }
     <div class="preview">
       <canvas id="canvas" width="5600" height="1600" aria-label="Preview of the front of your tag" role="img"></canvas>
       <canvas id="canvasBack" width="5600" height="1600" aria-label="Preview of the signature back of your tag" role="img"></canvas>
+      <div class="size">Printed size · 2.76 × 0.79 in</div>
     </div>
     <div class="note">Front and back download as two files, ready to drop into the print template.</div>
   </section>

@@ -143,6 +143,10 @@ select,input[type=number]{
 .bar i{ display:block; height:100%; width:0; background:var(--prussian); transition:width .12s linear; }
 .hide{ display:none !important; }
 @media (prefers-reduced-motion:reduce){ *{ transition:none !important; } }
+/* ---- desktop: widen the column to match the rest of the Network ---- */
+@media (min-width: 900px){
+  .wrap{ max-width:1200px; }
+}
 </style>
 </head>
 <body>
