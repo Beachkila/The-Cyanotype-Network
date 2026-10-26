@@ -84,6 +84,8 @@ input::placeholder{ color:var(--faint); }
   border-radius:6px; border:1px solid var(--prussian); background:var(--prussian); color:#fff; cursor:pointer;
 }
 .btn:disabled{ opacity:.45; cursor:default; }
+.btn.ghost{ background:transparent; color:var(--prussian); margin-top:8px; }
+.btn[hidden]{ display:none; }
 #status{ min-height:18px; font-size:13px; color:var(--gray); margin-top:8px; text-align:center; }
 :focus-visible{ outline:2px solid var(--prussian); outline-offset:2px; }
 
@@ -157,6 +159,8 @@ input::placeholder{ color:var(--faint); }
   <section>
     <div class="step"><b>4</b> · QR link <span style="font-variant:normal">(optional)</span></div>
     <input id="qr" type="url" maxlength="200" placeholder="https://your-site.com" autocomplete="off" inputmode="url" aria-label="QR link">
+    <button type="button" id="qrUsePrint" class="btn ghost" hidden>Use this print's Network page</button>
+    <div class="hint" id="qrPrintNote" hidden></div>
     <div class="hint">Adds a QR code to the front that opens this link. Use a link you control so it keeps working.</div>
   </section>
 
@@ -2574,9 +2578,9 @@ const TagEngine = (() => {
   }
 
   function drawPanel(ctx, c) {
+    // square outer corners: the frame runs to the edge for trimming
     ctx.fillStyle = c.frame;
-    roundRect(ctx, 0, 0, W, FACE_H, 30);
-    ctx.fill();
+    ctx.fillRect(0, 0, W, FACE_H);
     ctx.fillStyle = c.face;
     roundRect(ctx, FACE.x, FACE.y, FACE.w, FACE.h, FACE.r);
     ctx.fill();
@@ -2923,7 +2927,7 @@ const TagEngine = (() => {
       const uid = app.DB.uid();
       const [{ data: profile }, { data: prints }] = await Promise.all([
         app.sb.from("profiles").select("display_name").eq("id", uid).single(),
-        app.sb.from("prints").select("id,title,paper,created_at").eq("owner", uid).order("created_at", { ascending: false }),
+        app.sb.from("prints").select("id,title,paper,status,created_at").eq("owner", uid).order("created_at", { ascending: false }),
       ]);
       if (!prints || !prints.length) {
         if (profile && profile.display_name && !fields.artist.value) { fields.artist.value = profile.display_name; schedule(); }
@@ -2937,9 +2941,31 @@ const TagEngine = (() => {
         pick.appendChild(o);
       });
       document.getElementById("prefill").hidden = false;
+      // QR option: link straight to the chosen print's page on the Network.
+      const useBtn = document.getElementById("qrUsePrint");
+      const note = document.getElementById("qrPrintNote");
+      const printUrl = (id) => "https://network.studiowetware.com/#/print/" + id;
+      let chosen = null;
+      useBtn.addEventListener("click", () => {
+        if (!chosen) return;
+        fields.qr.value = printUrl(chosen.id);
+        generate();
+      });
+
       pick.addEventListener("change", () => {
         const p = prints.find(x => x.id === pick.value);
+        chosen = p || null;
+        useBtn.hidden = true;
+        note.hidden = true;
         if (!p) return;
+        if (p.status === "approved") {
+          useBtn.hidden = false;
+          note.hidden = false;
+          note.textContent = "Scanning opens the print on the Network. People need to be signed in to see it.";
+        } else {
+          note.hidden = false;
+          note.textContent = "This print's page can be linked once it's approved and live.";
+        }
         fields.title.value = (p.title || "").slice(0, 40);
         if (profile && profile.display_name) fields.artist.value = profile.display_name.slice(0, 30);
         fields.medium.value = (p.paper ? "Cyanotype on " + p.paper : "Cyanotype").slice(0, 40);
