@@ -1,0 +1,30 @@
+{
+  "id": "./admin.html",
+  "name": "TCN Review",
+  "short_name": "TCN Review",
+  "description": "Review queue for The Cyanotype Network.",
+  "start_url": "./admin.html",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#16385c",
+  "icons": [
+    {
+      "src": "assets/review-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/review-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/review-icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
