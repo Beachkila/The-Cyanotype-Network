@@ -55,15 +55,18 @@ const Feed = {
 
   async render(view) {
     view.innerHTML = `<div class="empty">Loading the feed…</div>`;
-    const [{ data: prints, error }, blocked, { data: myStamps }] = await Promise.all([
-      sb.from("prints")
-        .select("id, title, image_path, uvi, exposure, paper, asking_help, reviewed_at, owner, allow_comments, profiles!prints_owner_fkey(display_name), stamps(count), comments(count)")
-        .eq("status", "approved")
-        .order("reviewed_at", { ascending: false })
-        .limit(50),
+    const cols = "id, title, image_path, uvi, exposure, paper, asking_help, reviewed_at, owner, allow_comments, profiles!prints_owner_fkey(display_name), stamps(count), comments(count)";
+    const feedQuery = (c) => sb.from("prints").select(c)
+      .eq("status", "approved")
+      .order("reviewed_at", { ascending: false })
+      .limit(50);
+    let [{ data: prints, error }, blocked, { data: myStamps }] = await Promise.all([
+      feedQuery(cols + ", tag_style"),
       Feed.blockedSet(true),
       sb.from("stamps").select("print_id").eq("user_id", DB.uid())
     ]);
+    // Before the tag_style column is added, load the feed without it (tags fall back to the random mix).
+    if (FeedTags.missingColumn(error)) ({ data: prints, error } = await feedQuery(cols));
 
     if (error) { view.innerHTML = `<div class="empty">Couldn't load the feed. ${esc(error.message)}</div>`; return; }
     const mineStamped = new Set((myStamps || []).map(s => s.print_id));
@@ -81,7 +84,8 @@ const Feed = {
       p._stampCount = p.stamps?.[0]?.count || 0;
       const nComments = p.comments?.[0]?.count || 0;
       const row = el(`
-        <article class="row clickable" tabindex="0" role="link" aria-label="Open ${esc(p.title)}">
+        <article class="row clickable has-tag" tabindex="0" role="link" aria-label="Open ${esc(p.title)}">
+          <canvas class="feed-tag" width="1120" height="320" aria-hidden="true"></canvas>
           <div class="row-head">
             <b>${esc(p.profiles?.display_name || "Printer")}</b>
             <span class="time">· ${timeAgo(p.reviewed_at)}</span><br>
@@ -101,6 +105,7 @@ const Feed = {
       row.onkeydown = e => { if (e.key === "Enter" && e.target === row) open(); };
       row.querySelector("[data-open]")?.addEventListener("click", e => { e.stopPropagation(); open(); });
       view.appendChild(row);
+      FeedTags.draw(row.querySelector(".feed-tag"), p, p.profiles?.display_name || "Printer");
     }
     Feed.wireStamp(view);
   },

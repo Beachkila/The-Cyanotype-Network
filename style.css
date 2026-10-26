@@ -115,6 +115,15 @@ body.signed-in{ padding-bottom:calc(64px + env(safe-area-inset-bottom));}
   .row .print{ width:auto; max-width:min(100%, 560px); max-height:60vh; object-fit:contain;}
   .detail-body .print{ width:auto; max-width:min(100%, 760px); max-height:72vh; object-fit:contain;}
   .collected-grid{ grid-template-columns:repeat(auto-fill, minmax(240px, 1fr));}
+  /* feed: details, stamp and comments on the left half, the photo on the right half */
+  /* feed: the print's tag, name, details and buttons centered in the left half; photo on the right */
+  article.row.clickable{ display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr auto auto auto auto 1fr;
+    column-gap:36px; padding:22px 24px; text-align:center;}
+  article.row.clickable > .feed-tag{ grid-column:1; grid-row:2; justify-self:center; max-width:520px; margin-bottom:14px;}
+  article.row.clickable > .row-head{ grid-column:1; grid-row:3; font-size:16px; margin-bottom:4px;}
+  article.row.clickable > .meta-line{ grid-column:1; grid-row:4; margin:2px 0 8px;}
+  article.row.clickable > .actions{ grid-column:1; grid-row:5; justify-content:center;}
+  article.row.clickable > .print{ grid-column:2; grid-row:1 / -1; justify-self:center; align-self:center;}
 }
 @media (min-width: 1100px){ .uv-more{ display:inline;} }
 @media (min-width: 1240px){ .uv-range{ display:inline;} }
@@ -227,6 +236,25 @@ footer{ max-width:600px; margin:0 auto; padding:16px; color:var(--gray); font-si
   border:1px solid var(--divider); border-radius:6px; min-height:44px; background:#fff; color:var(--ink);}
 
 /* ---- stage 4: collected grid ---- */
+/* feed tags (phones: above the photo) */
+.feed-tag{ display:block; width:100%; height:auto; border-radius:3px; margin:0 0 10px; background:var(--chip);
+  box-shadow:0 1px 6px rgba(20,23,26,.12);}
+.row.has-tag .row-head .title{ display:none;}
+
+/* upload form: tag style picker */
+.tag-picker .tag-preview{ display:block; width:100%; max-width:440px; height:auto; border-radius:3px; margin:4px 0 10px;
+  box-shadow:0 1px 6px rgba(20,23,26,.12); background:var(--chip);}
+.tag-choices{ display:flex; flex-wrap:wrap; gap:8px; margin:6px 0;}
+.form .tag-choice{ position:relative; display:inline-flex; margin:0; font-weight:400; font-size:14px;}
+.tag-choice input{ position:absolute; opacity:0; width:1px; height:1px;}
+.tag-choice span{ display:flex; align-items:center; gap:8px; min-height:40px; padding:7px 12px; cursor:pointer;
+  border:1px solid var(--divider); border-radius:6px; background:var(--paper); color:var(--ink);}
+.tag-choice.swatch span{ padding-left:8px;}
+.tag-choice.swatch span::before{ content:""; width:22px; height:22px; border-radius:3px; background:var(--dot);
+  border:1px solid rgba(0,0,0,.2); flex:none;}
+.tag-choice input:checked + span{ border-color:var(--prussian); background:var(--prussian-wash); color:var(--prussian); font-weight:600;}
+.tag-choice input:focus-visible + span{ outline:2px solid var(--prussian); outline-offset:2px;}
+
 .collected-grid{ display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--divider);}
 .collected-grid a{ display:block; background:var(--paper); padding:12px; text-decoration:none; color:var(--ink);}
 .collected-grid .print{border-radius:4px; min-height:100px;}

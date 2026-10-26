@@ -1,12 +1,12 @@
 // THE CYANOTYPE NETWORK · sw.js — PWA shell (stage 7)
 // Network-first for the app shell so deploys are never stale; cache fallback
 // keeps the shell openable offline. API/storage/CDN requests pass through.
-const VERSION = "tcn-v5";
+const VERSION = "tcn-v7";
 const SHELL = [
   "./", "index.html", "style.css", "manifest.json",
   "js/config.js", "js/db.js", "js/auth.js", "js/upload.js",
   "js/forecast.js", "js/feed.js", "js/collected.js",
-  "js/myprints.js", "js/router.js", "js/negatives.js", "js/cmyk.js", "negatives.html", "cmyk.html", "js/gallerybench.js", "gallerybench.html", "js/enlarger.js", "negative-enlarger.html", "js/tags.js", "tcntags.html", "js/shell.js", 
+  "js/myprints.js", "js/router.js", "js/negatives.js", "js/cmyk.js", "negatives.html", "cmyk.html", "js/gallerybench.js", "gallerybench.html", "js/enlarger.js", "negative-enlarger.html", "js/tags.js", "tcntags.html", "js/shell.js", "js/tagengine.js", "js/feedtags.js", 
   "assets/icon-192.png", "assets/icon-512.png"
 ];
 

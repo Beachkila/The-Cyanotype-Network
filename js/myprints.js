@@ -111,6 +111,8 @@ const Mine = {
           <input id="u-uvi" type="text" maxlength="20" value="${esc(v.uvi || "")}" placeholder="e.g. 8">
           <label for="u-paper">Paper or surface <span class="opt">(optional)</span></label>
           <input id="u-paper" type="text" maxlength="120" value="${esc(v.paper || "")}" placeholder="e.g. Canson XL watercolor">
+          <label>Tag style <span class="opt">(shown with your print in the feed)</span></label>
+          <div class="tag-picker" id="tagPicker"></div>
           <label for="u-notes">Notes <span class="opt">(optional)</span></label>
           <textarea id="u-notes" maxlength="2000" placeholder="Formula, toning, what worked, what didn't">${esc(v.notes || "")}</textarea>
           <label class="check"><input id="u-comments" type="checkbox" ${v.allow_comments === false ? "" : "checked"}> Allow comments</label>
@@ -125,6 +127,17 @@ const Mine = {
 
     view.querySelector("#backBtn").onclick = () => Router.go("mine");
     const form = view.querySelector("#upForm");
+
+    // Tag style picker with a live preview of this print's tag
+    let artistName = "";
+    const picker = FeedTags.picker(view.querySelector("#tagPicker"), v.tag_style, () => ({
+      id: existing?.id, title: view.querySelector("#u-title").value || "Untitled",
+      paper: view.querySelector("#u-paper").value, created_at: existing?.created_at
+    }), () => artistName || "You");
+    ["#u-title", "#u-paper"].forEach(sel => view.querySelector(sel).addEventListener("input", () => picker.redraw()));
+    sb.from("profiles").select("display_name").eq("id", DB.uid()).maybeSingle()
+      .then(({ data }) => { artistName = data?.display_name || ""; picker.redraw(); });
+
     const save = async (status) => {
       const msg = view.querySelector("#upMsg");
       const btns = form.querySelectorAll("button");
@@ -151,11 +164,18 @@ const Mine = {
           asking_help: view.querySelector("#u-help").checked,
           status,
           review_note: null,
-          submitted_at: status === "submitted" ? new Date().toISOString() : null
+          submitted_at: status === "submitted" ? new Date().toISOString() : null,
+          tag_style: picker.value()
         };
-        const { error } = existing
-          ? await sb.from("prints").update(fields).eq("id", existing.id)
-          : await sb.from("prints").insert({ owner: DB.uid(), ...fields });
+        const write = (f) => existing
+          ? sb.from("prints").update(f).eq("id", existing.id)
+          : sb.from("prints").insert({ owner: DB.uid(), ...f });
+        let { error } = await write(fields);
+        // Until the tag_style column exists, save without it so uploads keep working.
+        if (FeedTags.missingColumn(error)) {
+          const { tag_style, ...rest } = fields;
+          ({ error } = await write(rest));
+        }
         if (error) throw error;
         Router.go("mine");
       } catch (err) {
