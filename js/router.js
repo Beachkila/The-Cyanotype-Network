@@ -29,15 +29,14 @@ const Router = {
   async handle() {
     const { name, arg } = Router.current();
     if (!DB.session) {
-      document.getElementById("mainNav").hidden = true;
+      Shell.signedOut();
       Auth.render(Router.view);
       return;
     }
-    document.getElementById("mainNav").hidden = false;
+    Shell.signedIn();
     const fn = Router.routes[name] || Router.routes.feed;
     const tab = { print: "feed", upload: "mine", edit: "mine" }[name] || name;
-    document.querySelectorAll("#mainNav button").forEach(b =>
-      b.classList.toggle("active", b.dataset.nav === tab));
+    Shell.setActive(tab, name);
     window.scrollTo({ top: 0 });
     await fn(Router.view, arg);
   },
@@ -48,8 +47,7 @@ const Router = {
 window.addEventListener("hashchange", () => Router.handle());
 window.addEventListener("DOMContentLoaded", async () => {
   Router.view = document.getElementById("view");
-  document.querySelectorAll("#mainNav button:not(:disabled)").forEach(b =>
-    b.onclick = () => Router.go(b.dataset.nav));
+  Shell.init();
   await DB.init();
   Router.handle();
 });
