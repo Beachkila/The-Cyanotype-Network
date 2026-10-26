@@ -3,9 +3,10 @@
 // style picked from their id, so older posts show a random mix that stays the same every visit.
 const FeedTags = {
   LAYOUTS: [["slab", "Slab"], ["museum", "Museum label"], ["ledger", "Ledger band"]],
-  COLORS: {"navy": {"name": "Network navy", "frame": "#16385c", "face": "#fbf9f5", "ink": "#16385c", "soft": "#7f8f9e", "line": "#e6e2d8", "tabBg": "#16385c", "tabInk": "#fbf9f5", "band": "#0e2a47", "bandInk": "#fbf9f5", "dot": "#16385c"}, "sunfade": {"name": "Sun-fade", "frame": "#7a9cbd", "face": "#fbf9f5", "ink": "#2c4a6a", "soft": "#7f8f9e", "line": "#e6e2d8", "tabBg": "#2c4a6a", "tabInk": "#fbf9f5", "band": "#6a8cad", "bandInk": "#ffffff", "dot": "#7a9cbd"}, "paper": {"name": "Paper", "frame": "#e9e1cf", "face": "#fdfbf6", "ink": "#16385c", "soft": "#8a8f94", "line": "#e3dccb", "tabBg": "#16385c", "tabInk": "#fdfbf6", "band": "#16385c", "bandInk": "#fdfbf6", "dot": "#e9e1cf"}, "tea": {"name": "Tea-toned", "frame": "#7a5a3f", "face": "#f7f0e4", "ink": "#4a3626", "soft": "#8c7660", "line": "#e6d9c6", "tabBg": "#7a5a3f", "tabInk": "#f7f0e4", "band": "#67492f", "bandInk": "#f7f0e4", "dot": "#7a5a3f"}, "bleached": {"name": "Bleached", "frame": "#a9b8c4", "face": "#fbfbf9", "ink": "#3e5466", "soft": "#8796a3", "line": "#e3e7ea", "tabBg": "#3e5466", "tabInk": "#fbfbf9", "band": "#c9d4dc", "bandInk": "#1f3344", "dot": "#a9b8c4"}, "night": {"name": "Night", "frame": "#121a24", "face": "#f4f2ec", "ink": "#121a24", "soft": "#6d747c", "line": "#dedad0", "tabBg": "#121a24", "tabInk": "#f4f2ec", "band": "#1e2935", "bandInk": "#f4f2ec", "dot": "#121a24"}},
+  COLORS: {"navy": {"name": "Network navy", "frame": "#16385c", "face": "#fbf9f5", "ink": "#16385c", "soft": "#4c5c6b", "line": "#e6e2d8", "tabBg": "#16385c", "tabInk": "#fbf9f5", "band": "#0e2a47", "bandInk": "#fbf9f5", "dot": "#16385c"}, "sunfade": {"name": "Sun-fade", "frame": "#7a9cbd", "face": "#fbf9f5", "ink": "#2c4a6a", "soft": "#4a5d70", "line": "#e6e2d8", "tabBg": "#2c4a6a", "tabInk": "#fbf9f5", "band": "#6a8cad", "bandInk": "#ffffff", "dot": "#7a9cbd"}, "paper": {"name": "Paper", "frame": "#e9e1cf", "face": "#fdfbf6", "ink": "#16385c", "soft": "#555b61", "line": "#e3dccb", "tabBg": "#16385c", "tabInk": "#fdfbf6", "band": "#16385c", "bandInk": "#fdfbf6", "dot": "#e9e1cf"}, "tea": {"name": "Tea-toned", "frame": "#7a5a3f", "face": "#f7f0e4", "ink": "#4a3626", "soft": "#6a523d", "line": "#e6d9c6", "tabBg": "#7a5a3f", "tabInk": "#f7f0e4", "band": "#67492f", "bandInk": "#f7f0e4", "dot": "#7a5a3f"}, "bleached": {"name": "Bleached", "frame": "#a9b8c4", "face": "#fbfbf9", "ink": "#3e5466", "soft": "#4a5a68", "line": "#e3e7ea", "tabBg": "#3e5466", "tabInk": "#fbfbf9", "band": "#c9d4dc", "bandInk": "#1f3344", "dot": "#a9b8c4"}, "night": {"name": "Night", "frame": "#121a24", "face": "#f4f2ec", "ink": "#121a24", "soft": "#4a5058", "line": "#dedad0", "tabBg": "#121a24", "tabInk": "#f4f2ec", "band": "#1e2935", "bandInk": "#f4f2ec", "dot": "#121a24"}},
   BRAND: { top: "THE CYANOTYPE", bottom: "NETWORK" },
   SCALE: 0.2,          // 1120 x 320 px: sharp at feed size, light on memory
+  BOOST: 1.45,         // larger secondary text so the tag reads on screen
   _fonts: null,
 
   fonts() {
@@ -37,7 +38,8 @@ const FeedTags = {
       artist: clip(artist, 30),
       medium: clip(p.paper ? "Cyanotype on " + p.paper : "Cyanotype", 40),
       size: "", edition: "",
-      year: when ? String(new Date(when).getFullYear()) : String(new Date().getFullYear()),
+      // the post date sits where a printed tag has the year
+      year: new Date(when || Date.now()).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }),
       qr: ""
     };
   },
@@ -45,7 +47,8 @@ const FeedTags = {
   async draw(canvas, p, artist, style) {
     await FeedTags.fonts();
     const s = style || FeedTags.styleFor(p);
-    TagEngine.renderFront(canvas, FeedTags.dataFor(p, artist), FeedTags.COLORS[s.color], s.layout, FeedTags.BRAND, FeedTags.SCALE);
+    TagEngine.renderFront(canvas, FeedTags.dataFor(p, artist), FeedTags.COLORS[s.color], s.layout, FeedTags.BRAND,
+      FeedTags.SCALE, { boost: FeedTags.BOOST });
   },
 
   // Upload form: layout chips, color swatches and a live preview.

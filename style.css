@@ -42,6 +42,14 @@ body{ font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,A
 .dd-item b{ display:block; font-size:15px; font-weight:600;}
 .dd-item small{ display:block; font-size:13px; color:var(--gray);}
 .ext{ font-size:.85em; color:var(--faint);}
+/* Learn menu: link back to Studio Wetware, in its own lettering */
+.sw-link{ display:flex; align-items:center; gap:10px; padding:8px 12px 10px; margin-bottom:4px; border-radius:6px;
+  border-bottom:1px solid var(--divider); text-decoration:none; color:var(--ink);}
+.sw-link:hover,.sw-link:focus-visible{ background:var(--prussian-wash);}
+.sw-link img{ width:30px; height:30px; border-radius:6px; background:#000; flex:none;}
+.sw-name{ font-family:Jost,'Century Gothic',Arial,sans-serif; font-weight:400; font-size:16px; letter-spacing:.08em;
+  text-transform:uppercase;}
+.sheet .sw-link{ margin:4px 0 2px;}
 
 /* right side: UV chip, upload, account */
 .topbar-right{ display:flex; align-items:center; gap:10px; margin-left:auto;}
@@ -116,14 +124,15 @@ body.signed-in{ padding-bottom:calc(64px + env(safe-area-inset-bottom));}
   .detail-body .print{ width:auto; max-width:min(100%, 760px); max-height:72vh; object-fit:contain;}
   .collected-grid{ grid-template-columns:repeat(auto-fill, minmax(240px, 1fr));}
   /* feed: details, stamp and comments on the left half, the photo on the right half */
-  /* feed: the print's tag, name, details and buttons centered in the left half; photo on the right */
-  article.row.clickable{ display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr auto auto auto auto 1fr;
-    column-gap:36px; padding:22px 24px; text-align:center;}
-  article.row.clickable > .feed-tag{ grid-column:1; grid-row:2; justify-self:center; max-width:520px; margin-bottom:14px;}
-  article.row.clickable > .row-head{ grid-column:1; grid-row:3; font-size:16px; margin-bottom:4px;}
-  article.row.clickable > .meta-line{ grid-column:1; grid-row:4; margin:2px 0 8px;}
-  article.row.clickable > .actions{ grid-column:1; grid-row:5; justify-content:center;}
-  article.row.clickable > .print{ grid-column:2; grid-row:1 / -1; justify-self:center; align-self:center;}
+  /* feed: the tag and buttons centered on the left, the photo larger on the right */
+  article.row.clickable{ display:grid; grid-template-columns:minmax(0,5fr) minmax(0,7fr); grid-template-rows:1fr auto auto auto 1fr;
+    column-gap:40px; padding:24px 28px; text-align:center;}
+  article.row.clickable > .feed-tag{ grid-column:1; grid-row:2; justify-self:center; max-width:460px; margin-bottom:12px;}
+  article.row.clickable > .row-head{ grid-column:1; grid-row:3; margin:0;}
+  article.row.clickable > .meta-line{ grid-column:1; grid-row:3;}
+  article.row.clickable > .actions{ grid-column:1; grid-row:4; justify-content:center;}
+  article.row.clickable > .print{ grid-column:2; grid-row:1 / -1; justify-self:center; align-self:center;
+    max-width:min(100%, 720px); max-height:76vh;}
 }
 @media (min-width: 1100px){ .uv-more{ display:inline;} }
 @media (min-width: 1240px){ .uv-range{ display:inline;} }
@@ -239,7 +248,9 @@ footer{ max-width:600px; margin:0 auto; padding:16px; color:var(--gray); font-si
 /* feed tags (phones: above the photo) */
 .feed-tag{ display:block; width:100%; height:auto; border-radius:3px; margin:0 0 10px; background:var(--chip);
   box-shadow:0 1px 6px rgba(20,23,26,.12);}
-.row.has-tag .row-head .title{ display:none;}
+.row.has-tag .row-head > :not(.tag-help),.row.has-tag .meta-line{ display:none;}
+.row.has-tag .row-head{ margin:0;}
+.row.has-tag .row-head .tag-help{ display:inline-block; margin:0 0 10px;}
 
 /* upload form: tag style picker */
 .tag-picker .tag-preview{ display:block; width:100%; max-width:440px; height:auto; border-radius:3px; margin:4px 0 10px;

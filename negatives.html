@@ -98,8 +98,9 @@
 
   .field{display:flex;align-items:center;gap:10px;margin:10px 0}
   .field label{flex:0 0 84px;font-size:12px;color:var(--ink)}
-  .field .val{margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--prussian);min-width:44px;text-align:right}
-  input[type=range]{flex:1;-webkit-appearance:none;appearance:none;height:3px;background:var(--line);border-radius:3px;outline:none}
+  .field .val{flex:0 0 auto;margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--prussian);min-width:44px;text-align:right}
+  .field label{min-width:0}
+  input[type=range]{flex:1;min-width:0;-webkit-appearance:none;appearance:none;height:3px;background:var(--line);border-radius:3px;outline:none}
   input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;border-radius:50%;background:var(--blue);cursor:pointer;border:2px solid var(--card)}
   input[type=range]::-moz-range-thumb{width:13px;height:13px;border-radius:50%;background:var(--blue);cursor:pointer;border:2px solid var(--card)}
   input[type=range]:focus-visible::-webkit-slider-thumb{box-shadow:0 0 0 3px rgba(58,131,192,.4)}

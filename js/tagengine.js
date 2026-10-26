@@ -105,12 +105,14 @@ const TagEngine = (() => {
     ctx.fillStyle = c.tabBg;
     roundRect(ctx, tx, ty, tw, th + 30, 24);
     ctx.fill();
-    text(ctx, brand.top, W / 2, ty + 80, `400 62px ${SERIF}`, c.tabInk, "center", 6);
+    text(ctx, brand.top, W / 2, ty + 80, `400 ${Math.round(62 * Math.min(B, 1.3))}px ${SERIF}`, c.tabInk, "center", 6);
     const s = fit(ctx, brand.bottom, (px) => `700 ${px}px ${SERIF}`, 118, tw - 120, 0.04);
     text(ctx, brand.bottom, W / 2, ty + 80 + s * 0.98, `700 ${s}px ${SERIF}`, c.tabInk, "center", s * 0.04);
   }
 
   const up = (s) => (s || "").toUpperCase();
+  // B > 1 enlarges secondary text for on-screen tags (feed); printed tags use 1.
+  let B = 1;
 
   // ---------- Front layouts ----------
   function frontSlab(ctx, d, c, q) {
@@ -138,7 +140,7 @@ const TagEngine = (() => {
     text(ctx, t, left, top + 200, `${big}px ${PLAIN}`, c.ink);
     text(ctx, by, left, top + 470, `${big}px ${PLAIN}`, c.ink);
     const med = [up(d.medium), up(d.size)].filter(Boolean).join(" · ");
-    const medSize = fit(ctx, med, (px) => `${px}px ${PLAIN}`, 140, maxW);
+    const medSize = fit(ctx, med, (px) => `${px}px ${PLAIN}`, Math.round(140 * B), maxW);
     text(ctx, med, left, top + 700, `${medSize}px ${PLAIN}`, c.soft);
 
     if (q) drawQR(ctx, q, right - qrSize, top + 20, qrSize, c.ink);
@@ -157,7 +159,7 @@ const TagEngine = (() => {
     const edW = Math.max(ctx.measureText(d.edition || "").width, 420);
     const edCx = edBlockRight - edW / 2;
     if (d.edition) {
-      text(ctx, "EDITION", edCx, midY - 120, `400 60px ${SERIF}`, c.soft, "center", 18);
+      text(ctx, "EDITION", edCx, midY - 120, `400 ${Math.round(60 * B)}px ${SERIF}`, c.soft, "center", 18);
       text(ctx, d.edition, edCx, midY + 140, `400 ${edSize}px ${SERIF}`, c.ink, "center");
     }
 
@@ -165,13 +167,13 @@ const TagEngine = (() => {
     const tSize = fit(ctx, d.title, (px) => `italic 400 ${px}px ${SERIF}`, 230, maxW);
     text(ctx, d.title, left, midY - 60, `italic 400 ${tSize}px ${SERIF}`, c.ink);
     const by = [d.artist, d.year].filter(Boolean).join(", ");
-    const bySize = fit(ctx, by, (px) => `400 ${px}px ${SERIF}`, 125, maxW);
-    text(ctx, by, left, midY + 130, `400 ${bySize}px ${SERIF}`, c.ink);
+    const bySize = fit(ctx, by, (px) => `400 ${px}px ${SERIF}`, Math.round(125 * B), maxW);
+    text(ctx, by, left, midY + 130 + (B - 1) * 60, `400 ${bySize}px ${SERIF}`, c.ink);
     ctx.fillStyle = c.line;
-    ctx.fillRect(left, midY + 210, Math.min(maxW, 3300), 10);
+    ctx.fillRect(left, midY + 210 + (B - 1) * 90, Math.min(maxW, 3300), 10);
     const med = [d.medium, d.size].filter(Boolean).join("  ·  ");
-    const medSize = fit(ctx, med, (px) => `400 ${px}px ${SERIF}`, 92, maxW, 0.04);
-    text(ctx, med, left, midY + 360, `400 ${medSize}px ${SERIF}`, c.soft, "left", medSize * 0.04);
+    const medSize = fit(ctx, med, (px) => `400 ${px}px ${SERIF}`, Math.round(92 * B), maxW, 0.04);
+    text(ctx, med, left, midY + 360 + (B - 1) * 150, `400 ${medSize}px ${SERIF}`, c.soft, "left", medSize * 0.04);
 
     if (q) drawQR(ctx, q, right - qrSize, FACE.y + (FACE.h - qrSize) / 2 - 40, qrSize, c.ink);
   }
@@ -190,7 +192,8 @@ const TagEngine = (() => {
     if (d.edition) text(ctx, "EDITION", bx, midY - 230, `500 76px ${SANS}`, c.bandInk, "left", 14);
     const edSize = fit(ctx, up(d.edition), (px) => `700 ${px}px ${SANS}`, 400, bandW - 240);
     text(ctx, up(d.edition), bx, midY + 130, `700 ${edSize}px ${SANS}`, c.bandInk);
-    text(ctx, up(d.year), bx, midY + 300, `500 130px ${SANS}`, c.bandInk, "left", 12);
+    const yrSize = fit(ctx, up(d.year), (px) => `500 ${px}px ${SANS}`, 130, bandW - 240, 0.09);
+    text(ctx, up(d.year), bx, midY + 300, `500 ${yrSize}px ${SANS}`, c.bandInk, "left", 12);
 
     const qrSize = q ? 600 : 0;
     const right = FACE.x + FACE.w - 120;
@@ -200,11 +203,11 @@ const TagEngine = (() => {
     const tSize = fit(ctx, t, (px) => `700 ${px}px ${SANS}`, 320, maxW);
     text(ctx, t, left, midY - 30, `700 ${tSize}px ${SANS}`, c.ink);
     const by = d.artist ? "BY " + up(d.artist) : "";
-    const bySize = fit(ctx, by, (px) => `500 ${px}px ${SANS}`, 160, maxW);
-    text(ctx, by, left, midY + 170, `500 ${bySize}px ${SANS}`, c.ink);
+    const bySize = fit(ctx, by, (px) => `500 ${px}px ${SANS}`, Math.round(160 * B), maxW);
+    text(ctx, by, left, midY + 170 + (B - 1) * 50, `500 ${bySize}px ${SANS}`, c.ink);
     const med = [up(d.medium), up(d.size)].filter(Boolean).join(" · ");
-    const medSize = fit(ctx, med, (px) => `500 ${px}px ${SANS}`, 105, maxW, 0.03);
-    text(ctx, med, left, midY + 330, `500 ${medSize}px ${SANS}`, c.soft, "left", medSize * 0.03);
+    const medSize = fit(ctx, med, (px) => `500 ${px}px ${SANS}`, Math.round(105 * B), maxW, 0.03);
+    text(ctx, med, left, midY + 330 + (B - 1) * 130, `500 ${medSize}px ${SANS}`, c.soft, "left", medSize * 0.03);
 
     if (q) drawQR(ctx, q, right - qrSize, FACE.y + (FACE.h - qrSize) / 2 - 40, qrSize, c.ink);
   }
@@ -248,9 +251,11 @@ const TagEngine = (() => {
   }
 
   // Front only, at any scale (used by the Network feed and upload preview).
-  function renderFront(canvas, data, color, layout, brand, scale = 1) {
+  function renderFront(canvas, data, color, layout, brand, scale = 1, opts = {}) {
     const q = data.qr ? qrMatrix(data.qr) : null;
-    drawFront(setup(canvas, scale), data, color, layout, brand, q);
+    B = opts.boost || 1;
+    try { drawFront(setup(canvas, scale), data, color, layout, brand, q); }
+    finally { B = 1; }
   }
 
   // Draws the front onto frontCanvas and the back onto backCanvas.

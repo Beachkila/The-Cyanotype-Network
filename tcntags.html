@@ -2598,12 +2598,14 @@ const TagEngine = (() => {
     ctx.fillStyle = c.tabBg;
     roundRect(ctx, tx, ty, tw, th + 30, 24);
     ctx.fill();
-    text(ctx, brand.top, W / 2, ty + 80, `400 62px ${SERIF}`, c.tabInk, "center", 6);
+    text(ctx, brand.top, W / 2, ty + 80, `400 ${Math.round(62 * Math.min(B, 1.3))}px ${SERIF}`, c.tabInk, "center", 6);
     const s = fit(ctx, brand.bottom, (px) => `700 ${px}px ${SERIF}`, 118, tw - 120, 0.04);
     text(ctx, brand.bottom, W / 2, ty + 80 + s * 0.98, `700 ${s}px ${SERIF}`, c.tabInk, "center", s * 0.04);
   }
 
   const up = (s) => (s || "").toUpperCase();
+  // B > 1 enlarges secondary text for on-screen tags (feed); printed tags use 1.
+  let B = 1;
 
   // ---------- Front layouts ----------
   function frontSlab(ctx, d, c, q) {
@@ -2631,7 +2633,7 @@ const TagEngine = (() => {
     text(ctx, t, left, top + 200, `${big}px ${PLAIN}`, c.ink);
     text(ctx, by, left, top + 470, `${big}px ${PLAIN}`, c.ink);
     const med = [up(d.medium), up(d.size)].filter(Boolean).join(" · ");
-    const medSize = fit(ctx, med, (px) => `${px}px ${PLAIN}`, 140, maxW);
+    const medSize = fit(ctx, med, (px) => `${px}px ${PLAIN}`, Math.round(140 * B), maxW);
     text(ctx, med, left, top + 700, `${medSize}px ${PLAIN}`, c.soft);
 
     if (q) drawQR(ctx, q, right - qrSize, top + 20, qrSize, c.ink);
@@ -2650,7 +2652,7 @@ const TagEngine = (() => {
     const edW = Math.max(ctx.measureText(d.edition || "").width, 420);
     const edCx = edBlockRight - edW / 2;
     if (d.edition) {
-      text(ctx, "EDITION", edCx, midY - 120, `400 60px ${SERIF}`, c.soft, "center", 18);
+      text(ctx, "EDITION", edCx, midY - 120, `400 ${Math.round(60 * B)}px ${SERIF}`, c.soft, "center", 18);
       text(ctx, d.edition, edCx, midY + 140, `400 ${edSize}px ${SERIF}`, c.ink, "center");
     }
 
@@ -2658,13 +2660,13 @@ const TagEngine = (() => {
     const tSize = fit(ctx, d.title, (px) => `italic 400 ${px}px ${SERIF}`, 230, maxW);
     text(ctx, d.title, left, midY - 60, `italic 400 ${tSize}px ${SERIF}`, c.ink);
     const by = [d.artist, d.year].filter(Boolean).join(", ");
-    const bySize = fit(ctx, by, (px) => `400 ${px}px ${SERIF}`, 125, maxW);
-    text(ctx, by, left, midY + 130, `400 ${bySize}px ${SERIF}`, c.ink);
+    const bySize = fit(ctx, by, (px) => `400 ${px}px ${SERIF}`, Math.round(125 * B), maxW);
+    text(ctx, by, left, midY + 130 + (B - 1) * 60, `400 ${bySize}px ${SERIF}`, c.ink);
     ctx.fillStyle = c.line;
-    ctx.fillRect(left, midY + 210, Math.min(maxW, 3300), 10);
+    ctx.fillRect(left, midY + 210 + (B - 1) * 90, Math.min(maxW, 3300), 10);
     const med = [d.medium, d.size].filter(Boolean).join("  ·  ");
-    const medSize = fit(ctx, med, (px) => `400 ${px}px ${SERIF}`, 92, maxW, 0.04);
-    text(ctx, med, left, midY + 360, `400 ${medSize}px ${SERIF}`, c.soft, "left", medSize * 0.04);
+    const medSize = fit(ctx, med, (px) => `400 ${px}px ${SERIF}`, Math.round(92 * B), maxW, 0.04);
+    text(ctx, med, left, midY + 360 + (B - 1) * 150, `400 ${medSize}px ${SERIF}`, c.soft, "left", medSize * 0.04);
 
     if (q) drawQR(ctx, q, right - qrSize, FACE.y + (FACE.h - qrSize) / 2 - 40, qrSize, c.ink);
   }
@@ -2683,7 +2685,8 @@ const TagEngine = (() => {
     if (d.edition) text(ctx, "EDITION", bx, midY - 230, `500 76px ${SANS}`, c.bandInk, "left", 14);
     const edSize = fit(ctx, up(d.edition), (px) => `700 ${px}px ${SANS}`, 400, bandW - 240);
     text(ctx, up(d.edition), bx, midY + 130, `700 ${edSize}px ${SANS}`, c.bandInk);
-    text(ctx, up(d.year), bx, midY + 300, `500 130px ${SANS}`, c.bandInk, "left", 12);
+    const yrSize = fit(ctx, up(d.year), (px) => `500 ${px}px ${SANS}`, 130, bandW - 240, 0.09);
+    text(ctx, up(d.year), bx, midY + 300, `500 ${yrSize}px ${SANS}`, c.bandInk, "left", 12);
 
     const qrSize = q ? 600 : 0;
     const right = FACE.x + FACE.w - 120;
@@ -2693,11 +2696,11 @@ const TagEngine = (() => {
     const tSize = fit(ctx, t, (px) => `700 ${px}px ${SANS}`, 320, maxW);
     text(ctx, t, left, midY - 30, `700 ${tSize}px ${SANS}`, c.ink);
     const by = d.artist ? "BY " + up(d.artist) : "";
-    const bySize = fit(ctx, by, (px) => `500 ${px}px ${SANS}`, 160, maxW);
-    text(ctx, by, left, midY + 170, `500 ${bySize}px ${SANS}`, c.ink);
+    const bySize = fit(ctx, by, (px) => `500 ${px}px ${SANS}`, Math.round(160 * B), maxW);
+    text(ctx, by, left, midY + 170 + (B - 1) * 50, `500 ${bySize}px ${SANS}`, c.ink);
     const med = [up(d.medium), up(d.size)].filter(Boolean).join(" · ");
-    const medSize = fit(ctx, med, (px) => `500 ${px}px ${SANS}`, 105, maxW, 0.03);
-    text(ctx, med, left, midY + 330, `500 ${medSize}px ${SANS}`, c.soft, "left", medSize * 0.03);
+    const medSize = fit(ctx, med, (px) => `500 ${px}px ${SANS}`, Math.round(105 * B), maxW, 0.03);
+    text(ctx, med, left, midY + 330 + (B - 1) * 130, `500 ${medSize}px ${SANS}`, c.soft, "left", medSize * 0.03);
 
     if (q) drawQR(ctx, q, right - qrSize, FACE.y + (FACE.h - qrSize) / 2 - 40, qrSize, c.ink);
   }
@@ -2721,13 +2724,31 @@ const TagEngine = (() => {
   }
 
   // ---------- Public API ----------
-  function setup(canvas) {
-    canvas.width = W;
-    canvas.height = FACE_H;
+  // scale < 1 draws a smaller copy (e.g. for the feed); drawing coordinates stay the same.
+  function setup(canvas, scale = 1) {
+    canvas.width = Math.round(W * scale);
+    canvas.height = Math.round(FACE_H * scale);
     const ctx = canvas.getContext("2d");
+    ctx.setTransform(scale, 0, 0, scale, 0, 0);
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, W, FACE_H);
     return ctx;
+  }
+
+  function drawFront(ctx, data, color, layout, brand, q) {
+    drawPanel(ctx, color);
+    if (layout === "museum") frontMuseum(ctx, data, color, q);
+    else if (layout === "ledger") frontLedger(ctx, data, color, q);
+    else frontSlab(ctx, data, color, q);
+    drawTab(ctx, color, brand);
+  }
+
+  // Front only, at any scale (used by the Network feed and upload preview).
+  function renderFront(canvas, data, color, layout, brand, scale = 1, opts = {}) {
+    const q = data.qr ? qrMatrix(data.qr) : null;
+    B = opts.boost || 1;
+    try { drawFront(setup(canvas, scale), data, color, layout, brand, q); }
+    finally { B = 1; }
   }
 
   // Draws the front onto frontCanvas and the back onto backCanvas.
@@ -2735,11 +2756,7 @@ const TagEngine = (() => {
     const q = data.qr ? qrMatrix(data.qr) : null;
 
     const f = setup(frontCanvas);
-    drawPanel(f, color);
-    if (layout === "museum") frontMuseum(f, data, color, q);
-    else if (layout === "ledger") frontLedger(f, data, color, q);
-    else frontSlab(f, data, color, q);
-    drawTab(f, color, brand);
+    drawFront(f, data, color, layout, brand, q);
 
     // back, upright: the print template flips it so it reads correctly once folded
     const k = setup(backCanvas);
@@ -2759,7 +2776,7 @@ const TagEngine = (() => {
     return t.toDataURL("image/jpeg", 0.75);
   }
 
-  return { render, thumbnail, loadFonts };
+  return { render, renderFront, thumbnail, loadFonts };
 })();
 
 </script>
@@ -2770,7 +2787,7 @@ const TagEngine = (() => {
   const SOURCE = "TCN";
   const FILENAME = "tcn-tag"; // base name; "-front.jpg" and "-back.jpg" are added
   const BRAND = {"top": "THE CYANOTYPE", "bottom": "NETWORK"};
-  const COLORS = {"navy": {"name": "Network navy", "frame": "#16385c", "face": "#fbf9f5", "ink": "#16385c", "soft": "#7f8f9e", "line": "#e6e2d8", "tabBg": "#16385c", "tabInk": "#fbf9f5", "band": "#0e2a47", "bandInk": "#fbf9f5", "dot": "#16385c"}, "sunfade": {"name": "Sun-fade", "frame": "#7a9cbd", "face": "#fbf9f5", "ink": "#2c4a6a", "soft": "#7f8f9e", "line": "#e6e2d8", "tabBg": "#2c4a6a", "tabInk": "#fbf9f5", "band": "#6a8cad", "bandInk": "#ffffff", "dot": "#7a9cbd"}, "paper": {"name": "Paper", "frame": "#e9e1cf", "face": "#fdfbf6", "ink": "#16385c", "soft": "#8a8f94", "line": "#e3dccb", "tabBg": "#16385c", "tabInk": "#fdfbf6", "band": "#16385c", "bandInk": "#fdfbf6", "dot": "#e9e1cf"}, "tea": {"name": "Tea-toned", "frame": "#7a5a3f", "face": "#f7f0e4", "ink": "#4a3626", "soft": "#8c7660", "line": "#e6d9c6", "tabBg": "#7a5a3f", "tabInk": "#f7f0e4", "band": "#67492f", "bandInk": "#f7f0e4", "dot": "#7a5a3f"}, "bleached": {"name": "Bleached", "frame": "#a9b8c4", "face": "#fbfbf9", "ink": "#3e5466", "soft": "#8796a3", "line": "#e3e7ea", "tabBg": "#3e5466", "tabInk": "#fbfbf9", "band": "#c9d4dc", "bandInk": "#1f3344", "dot": "#a9b8c4"}, "night": {"name": "Night", "frame": "#121a24", "face": "#f4f2ec", "ink": "#121a24", "soft": "#6d747c", "line": "#dedad0", "tabBg": "#121a24", "tabInk": "#f4f2ec", "band": "#1e2935", "bandInk": "#f4f2ec", "dot": "#121a24"}};
+  const COLORS = {"navy": {"name": "Network navy", "frame": "#16385c", "face": "#fbf9f5", "ink": "#16385c", "soft": "#4c5c6b", "line": "#e6e2d8", "tabBg": "#16385c", "tabInk": "#fbf9f5", "band": "#0e2a47", "bandInk": "#fbf9f5", "dot": "#16385c"}, "sunfade": {"name": "Sun-fade", "frame": "#7a9cbd", "face": "#fbf9f5", "ink": "#2c4a6a", "soft": "#4a5d70", "line": "#e6e2d8", "tabBg": "#2c4a6a", "tabInk": "#fbf9f5", "band": "#6a8cad", "bandInk": "#ffffff", "dot": "#7a9cbd"}, "paper": {"name": "Paper", "frame": "#e9e1cf", "face": "#fdfbf6", "ink": "#16385c", "soft": "#555b61", "line": "#e3dccb", "tabBg": "#16385c", "tabInk": "#fdfbf6", "band": "#16385c", "bandInk": "#fdfbf6", "dot": "#e9e1cf"}, "tea": {"name": "Tea-toned", "frame": "#7a5a3f", "face": "#f7f0e4", "ink": "#4a3626", "soft": "#6a523d", "line": "#e6d9c6", "tabBg": "#7a5a3f", "tabInk": "#f7f0e4", "band": "#67492f", "bandInk": "#f7f0e4", "dot": "#7a5a3f"}, "bleached": {"name": "Bleached", "frame": "#a9b8c4", "face": "#fbfbf9", "ink": "#3e5466", "soft": "#4a5a68", "line": "#e3e7ea", "tabBg": "#3e5466", "tabInk": "#fbfbf9", "band": "#c9d4dc", "bandInk": "#1f3344", "dot": "#a9b8c4"}, "night": {"name": "Night", "frame": "#121a24", "face": "#f4f2ec", "ink": "#121a24", "soft": "#4a5058", "line": "#dedad0", "tabBg": "#121a24", "tabInk": "#f4f2ec", "band": "#1e2935", "bandInk": "#f4f2ec", "dot": "#121a24"}};
 
   // Hide the masthead when embedded in the app shell, like the other Network tools.
   if (window.self !== window.top) {
