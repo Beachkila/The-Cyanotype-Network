@@ -1,7 +1,8 @@
 // THE CYANOTYPE NETWORK · shell.js — header menus, phone tab bar, UV chip, account initial
 const Shell = {
-  TOOL_ROUTES: ["negatives", "cmyk", "enlarger", "forecast", "gallerybench", "tags"],
-  _uv: null,          // { key, at, html } cached UV chip content
+  TOOL_ROUTES: ["negatives", "cmyk", "enlarger", "gallerybench", "tags"],
+  YOU_ROUTES: ["mine", "collected", "account"],
+  _uv: null,          // cached UV chip content
   _prevRoute: null,
   _initial: null,
 
@@ -14,7 +15,7 @@ const Shell = {
       });
     });
 
-    // Desktop dropdowns (Tools, Learn)
+    // Desktop dropdowns (Tools, Learn, profile)
     document.querySelectorAll(".menu-btn").forEach(btn => {
       const dd = document.getElementById(btn.getAttribute("aria-controls"));
       btn.addEventListener("click", (e) => {
@@ -24,23 +25,25 @@ const Shell = {
         dd.hidden = !open;
         btn.setAttribute("aria-expanded", String(open));
       });
-      dd.querySelectorAll("a").forEach(a => a.addEventListener("click", () => Shell.closeAll()));
     });
 
-    // Phone "More" sheet
-    const more = document.getElementById("moreBtn");
-    more.addEventListener("click", (e) => {
-      e.stopPropagation();
-      const sheet = document.getElementById("moreSheet");
-      const open = sheet.hidden;
-      Shell.closeAll();
-      sheet.hidden = !open;
-      document.getElementById("sheetBackdrop").hidden = !open;
-      more.setAttribute("aria-expanded", String(open));
-      more.classList.toggle("active", open);
+    // Phone sheets (Tools, Learn, More)
+    document.querySelectorAll("[data-sheet]").forEach(btn => {
+      const sheet = document.getElementById(btn.dataset.sheet);
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const open = sheet.hidden;
+        Shell.closeAll();
+        sheet.hidden = !open;
+        document.getElementById("sheetBackdrop").hidden = !open;
+        btn.setAttribute("aria-expanded", String(open));
+        btn.classList.toggle("open", open);
+      });
     });
     document.getElementById("sheetBackdrop").addEventListener("click", () => Shell.closeAll());
-    document.querySelectorAll("#moreSheet a").forEach(a => a.addEventListener("click", () => Shell.closeAll()));
+
+    // Outside links in menus and sheets close them too.
+    document.querySelectorAll(".dropdown a, .sheet a").forEach(a => a.addEventListener("click", () => Shell.closeAll()));
 
     document.addEventListener("click", (e) => {
       if (!e.target.closest(".menu")) Shell.closeDropdowns();
@@ -55,12 +58,13 @@ const Shell = {
 
   closeAll() {
     Shell.closeDropdowns();
-    const sheet = document.getElementById("moreSheet");
-    if (sheet) sheet.hidden = true;
+    document.querySelectorAll(".sheet").forEach(s => { s.hidden = true; });
     const bd = document.getElementById("sheetBackdrop");
     if (bd) bd.hidden = true;
-    const more = document.getElementById("moreBtn");
-    if (more) { more.setAttribute("aria-expanded", "false"); more.classList.remove("active"); }
+    document.querySelectorAll("[data-sheet]").forEach(b => {
+      b.setAttribute("aria-expanded", "false");
+      b.classList.remove("open");
+    });
   },
 
   signedOut() {
@@ -77,15 +81,14 @@ const Shell = {
     Shell.loadInitial();
   },
 
-  // tab: the route name used for highlighting (feed, mine, collected, tools routes, account)
+  // tab: the route name used for highlighting
   setActive(tab, route) {
     Shell.closeAll();
-    document.querySelectorAll("[data-nav]").forEach(b =>
-      b.classList.toggle("active", b.dataset.nav === tab && !b.classList.contains("uv-chip")));
+    document.querySelectorAll("[data-nav]").forEach(b => b.classList.toggle("active", b.dataset.nav === tab));
     const inTools = Shell.TOOL_ROUTES.includes(tab);
+    const inYou = Shell.YOU_ROUTES.includes(tab);
     document.querySelectorAll('[data-group="tools"]').forEach(b => b.classList.toggle("active", inTools));
-    // Phone: light up "More" when the page lives in the More sheet.
-    document.getElementById("moreBtn").classList.toggle("current", inTools || tab === "account");
+    document.querySelectorAll('[data-group="you"]').forEach(b => b.classList.toggle("active", inYou));
     // Coming back from Forecast: the saved location may have changed.
     if (Shell._prevRoute === "forecast") Shell._uv = null;
     Shell._prevRoute = route;
@@ -100,7 +103,8 @@ const Shell = {
       const name = (data && data.display_name) || "";
       Shell._initial = (name.trim()[0] || "•").toUpperCase();
       btn.textContent = Shell._initial;
-      btn.title = name ? name + " · Account" : "Account";
+      btn.title = name || "You";
+      if (name) document.querySelectorAll(".you-name").forEach(el => { el.textContent = name; });
     } catch (e) {
       btn.textContent = "•";
     }

@@ -18,8 +18,6 @@
 
     <nav aria-label="Main" id="mainNav" class="mainnav" hidden>
       <button type="button" class="nav-link" data-nav="feed">Feed</button>
-      <button type="button" class="nav-link" data-nav="mine">My Prints</button>
-      <button type="button" class="nav-link" data-nav="collected">Collected</button>
       <div class="menu">
         <button type="button" class="nav-link menu-btn" data-group="tools" aria-expanded="false" aria-haspopup="true" aria-controls="toolsMenu">Tools<svg class="caret" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
         <div class="dropdown" id="toolsMenu" role="menu" hidden>
@@ -27,8 +25,6 @@
           <button type="button" class="dd-item" data-nav="negatives" role="menuitem"><b>Negatives</b><small>SoLaT digital negatives from any image</small></button>
           <button type="button" class="dd-item" data-nav="cmyk" role="menuitem"><b>CMYK</b><small>Color separations for UV printing</small></button>
           <button type="button" class="dd-item" data-nav="enlarger" role="menuitem"><b>Enlarger</b><small>Print a large negative across sheets</small></button>
-          <div class="dd-grp">Print &amp; show</div>
-          <button type="button" class="dd-item" data-nav="forecast" role="menuitem"><b>Forecast</b><small>UV index and exposure outlook</small></button>
           <button type="button" class="dd-item" data-nav="gallerybench" role="menuitem"><b>Gallery Bench</b><small>Square up and neutralize print photos</small></button>
           <button type="button" class="dd-item" data-nav="tags" role="menuitem"><b>Tags</b><small>Folding display tags for your prints</small></button>
         </div>
@@ -41,7 +37,6 @@
           <a class="dd-item" href="https://studiowetware.com/step-by-step/" target="_blank" rel="noopener" role="menuitem"><b>Step-by-step guide <span class="ext" aria-hidden="true">↗</span></b><small>Negative · Preparation · UV exposure · Washing</small></a>
           <a class="dd-item" href="https://studiowetware.com/solat-digital-negatives/" target="_blank" rel="noopener" role="menuitem"><b>SoLaT digital negatives <span class="ext" aria-hidden="true">↗</span></b><small>The method behind the Negatives tool</small></a>
           <a class="dd-item" href="https://studiowetware.com/sunprint/" target="_blank" rel="noopener" role="menuitem"><b>SUNPRINT UV forecast <span class="ext" aria-hidden="true">↗</span></b><small>Reading UV for exposure times</small></a>
-          <a class="dd-item" href="https://studiowetware.com/galleries/" target="_blank" rel="noopener" role="menuitem"><b>Galleries <span class="ext" aria-hidden="true">↗</span></b><small>Cyanotypes, infrared, linocuts and more</small></a>
         </div>
       </div>
     </nav>
@@ -53,7 +48,15 @@
       <button type="button" class="upload-btn" data-nav="upload" aria-label="Upload a print">
         <span aria-hidden="true">+</span><span class="upload-label"> Upload print</span>
       </button>
-      <button type="button" class="avatar" id="avatarBtn" data-nav="account" aria-label="Account"></button>
+      <div class="menu you-menu">
+        <button type="button" class="avatar menu-btn" id="avatarBtn" data-group="you" aria-expanded="false" aria-haspopup="true" aria-controls="youMenu" aria-label="Your prints and account"></button>
+        <div class="dropdown right" id="youMenu" role="menu" hidden>
+          <div class="dd-grp you-name" id="youName">You</div>
+          <button type="button" class="dd-item" data-nav="mine" role="menuitem"><b>My Prints</b><small>Your uploads and their review status</small></button>
+          <button type="button" class="dd-item" data-nav="collected" role="menuitem"><b>Collected</b><small>Prints you've stamped</small></button>
+          <button type="button" class="dd-item" data-nav="account" role="menuitem"><b>Account</b><small>Name, notifications, sign out</small></button>
+        </div>
+      </div>
     </div>
   </div>
 </header>
@@ -70,28 +73,34 @@
   <a href="https://github.com/Beachkila" target="_blank" rel="noopener">GitHub</a>
 </footer>
 
-<!-- phone: bottom tab bar + More sheet -->
+<!-- phone: bottom tab bar + sheets -->
 <nav class="tabbar" id="tabBar" aria-label="Sections" hidden>
   <button type="button" data-nav="feed"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16M4 12h16M4 19h10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>Feed</button>
-  <button type="button" data-nav="mine"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M7 16l3.5-4 2.5 3 2-2 2 3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>My Prints</button>
-  <button type="button" data-nav="collected"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4l2.4 5 5.4.6-4 3.7 1.1 5.4L12 16l-4.9 2.7 1.1-5.4-4-3.7 5.4-.6z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>Collected</button>
-  <button type="button" id="moreBtn" data-group="more" aria-expanded="false" aria-controls="moreSheet"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.8" fill="currentColor"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><circle cx="19" cy="12" r="1.8" fill="currentColor"/></svg>More</button>
+  <button type="button" data-sheet="toolsSheet" data-group="tools" aria-expanded="false" aria-controls="toolsSheet"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="13" y="4" width="7" height="7" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="4" y="13" width="7" height="7" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="13" y="13" width="7" height="7" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>Tools</button>
+  <button type="button" data-sheet="learnSheet" aria-expanded="false" aria-controls="learnSheet"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5C6.5 5 9.5 5 12 6.5 14.5 5 17.5 5 20 6.5V19c-2.5-1.5-5.5-1.5-8 0-2.5-1.5-5.5-1.5-8 0z M12 6.5V19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>Learn</button>
+  <button type="button" data-sheet="youSheet" data-group="you" aria-expanded="false" aria-controls="youSheet"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.8" fill="currentColor"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><circle cx="19" cy="12" r="1.8" fill="currentColor"/></svg>More</button>
 </nav>
 <div class="sheet-backdrop" id="sheetBackdrop" hidden></div>
-<div class="sheet" id="moreSheet" role="dialog" aria-label="More" hidden>
-  <div class="sheet-grp">Tools</div>
-      <button type="button" class="sheet-item" data-nav="negatives">Negatives</button>
-      <button type="button" class="sheet-item" data-nav="cmyk">CMYK</button>
-      <button type="button" class="sheet-item" data-nav="enlarger">Enlarger</button>
-      <button type="button" class="sheet-item" data-nav="forecast">Forecast</button>
-      <button type="button" class="sheet-item" data-nav="gallerybench">Gallery Bench</button>
-      <button type="button" class="sheet-item" data-nav="tags">Tags</button>
-  <div class="sheet-grp">Learn on studiowetware.com <span class="ext" aria-hidden="true">↗</span></div>
-      <a class="sheet-item" href="https://studiowetware.com/how-cyanotype-works/" target="_blank" rel="noopener">How cyanotype works <span class="ext" aria-hidden="true">↗</span></a>
-      <a class="sheet-item" href="https://studiowetware.com/step-by-step/" target="_blank" rel="noopener">Step-by-step guide <span class="ext" aria-hidden="true">↗</span></a>
-      <a class="sheet-item" href="https://studiowetware.com/solat-digital-negatives/" target="_blank" rel="noopener">SoLaT digital negatives <span class="ext" aria-hidden="true">↗</span></a>
-  <div class="sheet-grp">You</div>
-  <button type="button" class="sheet-item" data-nav="account">Account</button>
+<div class="sheet" id="toolsSheet" role="dialog" aria-label="Tools" hidden>
+  <div class="sheet-grp">Make</div>
+  <button type="button" class="sheet-item" data-nav="negatives">Negatives<small>SoLaT digital negatives from any image</small></button>
+  <button type="button" class="sheet-item" data-nav="cmyk">CMYK<small>Color separations for UV printing</small></button>
+  <button type="button" class="sheet-item" data-nav="enlarger">Enlarger<small>Print a large negative across sheets</small></button>
+  <button type="button" class="sheet-item" data-nav="gallerybench">Gallery Bench<small>Square up and neutralize print photos</small></button>
+  <button type="button" class="sheet-item" data-nav="tags">Tags<small>Folding display tags for your prints</small></button>
+</div>
+<div class="sheet" id="learnSheet" role="dialog" aria-label="Learn" hidden>
+  <div class="sheet-grp">On studiowetware.com <span class="ext" aria-hidden="true">↗</span></div>
+  <a class="sheet-item" href="https://studiowetware.com/how-cyanotype-works/" target="_blank" rel="noopener">How cyanotype works <span class="ext" aria-hidden="true">↗</span><small>Light, salt, think negative, see positive</small></a>
+  <a class="sheet-item" href="https://studiowetware.com/step-by-step/" target="_blank" rel="noopener">Step-by-step guide <span class="ext" aria-hidden="true">↗</span><small>Negative · Preparation · UV exposure · Washing</small></a>
+  <a class="sheet-item" href="https://studiowetware.com/solat-digital-negatives/" target="_blank" rel="noopener">SoLaT digital negatives <span class="ext" aria-hidden="true">↗</span><small>The method behind the Negatives tool</small></a>
+  <a class="sheet-item" href="https://studiowetware.com/sunprint/" target="_blank" rel="noopener">SUNPRINT UV forecast <span class="ext" aria-hidden="true">↗</span><small>Reading UV for exposure times</small></a>
+</div>
+<div class="sheet" id="youSheet" role="dialog" aria-label="Your prints and account" hidden>
+  <div class="sheet-grp you-name">You</div>
+  <button type="button" class="sheet-item" data-nav="mine">My Prints<small>Your uploads and their review status</small></button>
+  <button type="button" class="sheet-item" data-nav="collected">Collected<small>Prints you've stamped</small></button>
+  <button type="button" class="sheet-item" data-nav="account">Account<small>Name, notifications, sign out</small></button>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
