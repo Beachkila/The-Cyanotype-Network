@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Negative Enlarger · The Cyanotype Network</title>
+<link rel="stylesheet" href="maker.css?v=11">
+<script src="js/maker.js?v=11"></script>
 <style>
 /* ---- tokens: taken from the Network's style.css :root ---- */
 :root{
@@ -90,6 +92,23 @@ main{ padding:14px; min-width:0; }
   border:1px solid var(--divider); border-radius:2px; }
 .hidden{ display:none !important; }
 @media (prefers-reduced-motion:reduce){ *{ transition:none !important; } }
+
+/* ---- shared maker space ---- */
+.table{ position:relative; }
+#chipHost{ position:static; margin-bottom:12px; }
+#viewSeg{ display:none; }
+.vseg{ display:inline-flex; border:1px solid var(--divider); border-radius:6px; overflow:hidden; background:var(--paper); }
+.vseg button{ border:0; background:none; padding:8px 14px; font-size:14px; color:var(--gray); }
+.vseg button.on{ background:var(--prussian); color:#fff; font-weight:600; }
+html.mk-on #viewSeg{ display:block; }
+html.mk-on .table{ display:flex; flex-direction:column; min-height:0; }
+html.mk-on #stage{ flex:1; min-height:0; overflow:auto; padding:12px; }
+html.mk-on #stage h2, html.mk-on #asmMeta, html.mk-on #sheetsView .legend{ display:none; }
+html.mk-on #assembly{ margin:0 auto; }
+html.mk-on .table[data-view="asm"] #sheetsView{ display:none; }
+html.mk-on .table[data-view="sheets"] #asmView{ display:none; }
+html.mk-on #asmView{ height:100%; display:flex; align-items:center; justify-content:center; }
+.mk-panel #pick{ display:none; }
 </style>
 </head>
 <body>
@@ -113,8 +132,7 @@ if (window.self !== window.top) {
 
   <fieldset>
     <legend>Negative</legend>
-    <input id="file" type="file" accept="image/*" class="hidden">
-    <button class="ghost" id="pick" type="button">Choose image</button>
+        <button class="ghost" id="pick" type="button">Change image</button>
     <div class="readout" id="imgInfo">No image yet</div>
     <label class="check"><input type="checkbox" id="invert"> Invert tones</label>
     <label class="check"><input type="checkbox" id="mirror"> Mirror (flip left to right)</label>
@@ -169,21 +187,25 @@ if (window.self !== window.top) {
 </aside>
 
 <main>
-  <div class="table">
-    <div class="drop" id="drop">
-      <strong>Drop your negative here</strong>
-      <span>or use Choose image. PNG, JPEG, TIFF-converted files and WebP all work.</span>
-    </div>
+  <div class="table" id="table" data-view="asm">
+    <div class="mk-chip-host" id="chipHost"></div>
+    <div id="viewSeg"><div class="vseg" role="group" aria-label="Preview">
+      <button type="button" data-v="asm" class="on">Assembled</button><button type="button" data-v="sheets">Sheets</button>
+    </div></div>
     <div class="stage hidden" id="stage">
-      <h2>Assembled piece</h2>
-      <p class="meta" id="asmMeta"></p>
-      <canvas id="assembly"></canvas>
-      <h2>Sheets as printed</h2>
-      <div class="legend">
-        <span><i class="sw" style="background:var(--nonprint)"></i>Printer's blank edge (not printed)</span>
-        <span>Dotted lines: cut here</span>
+      <div id="asmView">
+        <h2>Assembled piece</h2>
+        <p class="meta" id="asmMeta"></p>
+        <canvas id="assembly"></canvas>
       </div>
-      <div class="sheets" id="sheets"></div>
+      <div id="sheetsView">
+        <h2>Sheets as printed</h2>
+        <div class="legend">
+          <span><i class="sw" style="background:var(--nonprint)"></i>Printer's blank edge (not printed)</span>
+          <span>Dotted lines: cut here</span>
+        </div>
+        <div class="sheets" id="sheets"></div>
+      </div>
     </div>
   </div>
 </main>
@@ -276,13 +298,13 @@ function syncSize(){
   } else h.classList.remove('on');
 }
 
-$('pick').onclick = () => $('file').click();
-$('file').onchange = e => e.target.files[0] && load(e.target.files[0]);
-const drop = $('drop');
-['dragenter','dragover'].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add('over'); }));
-['dragleave','drop'].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.remove('over'); }));
-drop.addEventListener('drop', e => e.dataTransfer.files[0] && load(e.dataTransfer.files[0]));
-drop.addEventListener('click', () => $('file').click());
+$('pick').onclick = () => Maker.openStart(!!S.img);
+$('viewSeg').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  $('table').dataset.view = b.dataset.v;
+  $('viewSeg').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+  render();
+});
 
 $('pages').onchange = () => { S.pages = +$('pages').value; applyLayout(true); };
 $('size').oninput = () => { S.w = +$('size').value; syncSize(); render(); };
@@ -292,19 +314,41 @@ $('fit').onclick = () => { S.w = S.lay.maxW; syncSize(); render(); };
 ['paper','margin','overlap','border'].forEach(id => $(id).onchange = () => { rebuildPages(); applyLayout(true); });
 ['invert','mirror'].forEach(id => $(id).onchange = () => { if (S.img){ prepSource(); render(); } });
 ['surround','linesOver'].forEach(id => $(id).onchange = render);
+$('dpi').onchange = () => Maker.saveState();
 $('go').onclick = exportZip;
 
-function load(file){
-  const url = URL.createObjectURL(file); const im = new Image();
-  im.onload = () => {
-    S.img = im; S.name = file.name.replace(/\.[^.]+$/,'');
-    S.aspect = im.naturalWidth / im.naturalHeight;
-    $('imgInfo').innerHTML = `<b>${file.name}</b><br>${im.naturalWidth} × ${im.naturalHeight} px`;
-    prepSource(); $('drop').classList.add('hidden'); $('stage').classList.remove('hidden');
-    $('go').disabled = false; rebuildPages(); applyLayout(true);
-  };
-  im.onerror = () => { $('status').textContent = 'That file could not be opened as an image. TIFFs need converting to PNG first.'; };
-  im.src = url;
+// Opened by the shared start sheet (your prints, camera, file, recent).
+function loadBlob(blob, info){
+  return new Promise((res, rej) => {
+    const url = URL.createObjectURL(blob); const im = new Image();
+    im.onload = () => {
+      URL.revokeObjectURL(url);
+      const name = (info && info.name) || 'image', st = info && info.state;
+      S.img = im; S.name = name.replace(/\.[^.]+$/,'');
+      S.aspect = im.naturalWidth / im.naturalHeight;
+      $('imgInfo').innerHTML = `<b>${esc(name)}</b><br>${im.naturalWidth} × ${im.naturalHeight} px`;
+      if (st) applyState(st);
+      prepSource(); $('stage').classList.remove('hidden');
+      $('go').disabled = false;
+      if (st && st.pages){ rebuildPages(st.pages); S.w = st.w || 0; applyLayout(!st.w); }
+      else { rebuildPages(); applyLayout(true); }
+      res();
+    };
+    im.onerror = () => { URL.revokeObjectURL(url); rej(new Error('decode')); };
+    im.src = url;
+  });
+}
+function esc(t){ return String(t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+const FIELDS = ['paper','margin','overlap','border','dpi'], CHECKS = ['invert','mirror','surround','linesOver'];
+function getState(){
+  const o = { pages:S.pages, w:S.w, view:$('table').dataset.view };
+  FIELDS.forEach(id => o[id] = $(id).value); CHECKS.forEach(id => o[id] = $(id).checked);
+  return o;
+}
+function applyState(st){
+  FIELDS.forEach(id => { if (st[id] != null) $(id).value = st[id]; });
+  CHECKS.forEach(id => { if (st[id] != null) $(id).checked = !!st[id]; });
+  if (st.view){ $('table').dataset.view = st.view; $('viewSeg').querySelectorAll('button').forEach(x => x.classList.toggle('on', x.dataset.v === st.view)); }
 }
 function prepSource(){
   const im = S.img, cap = 8000, k = Math.min(1, cap / Math.max(im.naturalWidth, im.naturalHeight));
@@ -373,8 +417,10 @@ function render(){
   if (!S.img || !S.lay) return;
   const L = S.lay, R = imgRect(L);
   // Assembled preview
-  const cv = $('assembly'), box = cv.parentElement.clientWidth - 36;
-  const D = Math.min(box / L.W, 520 / L.H), dpr = window.devicePixelRatio || 1;
+  const phone = document.documentElement.classList.contains('mk-on');
+  const cv = $('assembly'), box = $('table').clientWidth - (phone ? 20 : 36);
+  const tall = phone ? Math.max(120, $('table').clientHeight - 24) : 520;
+  const D = Math.min(box / L.W, tall / L.H), dpr = window.devicePixelRatio || 1;
   cv.width = Math.round(L.W*D*dpr); cv.height = Math.round(L.H*D*dpr);
   cv.style.width = (L.W*D)+'px'; cv.style.height = (L.H*D)+'px';
   const x = cv.getContext('2d'); x.scale(dpr,dpr);
@@ -403,6 +449,7 @@ function render(){
     cap.textContent = `Sheet ${n}: keeps ${fmt(L.kw[ci])} × ${fmt(L.kh[ri])} in`;
     f.append(c, cap); const d = document.createElement('div'); d.className='sheet'; d.append(f); wrap.append(d);
   }
+  if (window.Maker) Maker.saveState();
 }
 let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(render, 150); });
 
@@ -540,6 +587,23 @@ Unprintable edge: ${fmt(L.m)} in   Overlap: ${fmt(L.s*2)} in   Taping border: at
 
 rebuildPages(4); S.lay = bestLayout(S.pages, params());
 $('layoutInfo').textContent = 'Choose an image to see its layout.';
+
+/* ---------- shared maker space ---------- */
+const sets = document.querySelectorAll('aside fieldset');
+Maker.editor({
+  stage: $('table'),
+  panels: [
+    { title:'Negative', nodes:[sets[0]] },
+    { title:'Pages',    nodes:[sets[1]] },
+    { title:'Size',     nodes:[sets[2]] },
+    { title:'Printer',  nodes:[document.querySelector('aside details')] }
+  ],
+  toolbar: [$('viewSeg')], chip: $('chipHost'),
+  actions: [$('status'), $('go')],
+  hide: [document.querySelector('aside .page-head')],
+  onLayout: (on) => { const d = document.querySelector('details'); if (on && d) d.open = true; render(); }
+});
+Maker.init({ tool:'enlarger', label:'Enlarger', chipHost:$('chipHost'), onImage:loadBlob, getState });
 })();
 </script>
 </body>

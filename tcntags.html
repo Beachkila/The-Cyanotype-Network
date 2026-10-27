@@ -10,6 +10,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <!-- Fonts used on the printed tag itself (the page uses the Network's own fonts) -->
 <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Oswald:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="maker.css?v=11">
+<script src="js/maker.js?v=11"></script>
 <style>
 /* ---- tokens: taken from the Network's style.css :root ---- */
 :root{
@@ -110,6 +112,11 @@ input::placeholder{ color:var(--faint); }
 @media (min-width: 900px){
   .wrap{ max-width:1200px; }
 }
+/* ---- shared maker space: phone keeps the tag in view, sections swipe ---- */
+html.mk-on .mk-view .sticky{ position:static; display:flex; flex-direction:column; justify-content:center; padding:12px 16px !important; }
+html.mk-on .mk-view .preview{ border:0; background:transparent; padding:0; }
+html.mk-on .mk-view .preview canvas{ width:100%; max-width:4.6in; }
+html.mk-on .mk-view .preview .size, html.mk-on .mk-view .note{ display:none; }
 </style>
 </head>
 <body>
@@ -3000,6 +3007,50 @@ const TagEngine = (() => {
   })();
 
   generate();
+})();
+</script>
+<script>
+(function(){
+  if (!window.Maker) return;
+  var secs = document.querySelectorAll(".wrap > section");
+  Maker.editor({
+    stage: secs[0],
+    panels: [
+      { title: "Print",  nodes: [secs[1]] },
+      { title: "Layout", nodes: [secs[2]] },
+      { title: "Color",  nodes: [secs[3]] },
+      { title: "QR",     nodes: [secs[4]] },
+      { title: "Print it", nodes: [secs[5]] }
+    ],
+    actions: [document.getElementById("downloadBtn")],
+    hide: [document.querySelector(".page-head")]
+  });
+  // Keep what was typed on this device, per account, so it survives leaving the page.
+  var IDS = ["title","artist","medium","size","edition","year","qr"], t = 0, ready = false;
+  function save(){
+    if (!ready) return;
+    clearTimeout(t);
+    t = setTimeout(function(){
+      var o = {};
+      IDS.forEach(function(id){ var e = document.getElementById(id); if (e) o[id] = e.value; });
+      var l = document.querySelector('input[name="layout"]:checked'), c = document.querySelector('input[name="color"]:checked');
+      o.layout = l && l.value; o.color = c && c.value;
+      Maker.Tray.meta("tags:form", o);
+    }, 400);
+  }
+  document.addEventListener("input", save);
+  document.addEventListener("change", save);
+  Maker.Tray.meta("tags:form").then(function(o){
+    if (o) {
+      IDS.forEach(function(id){ var e = document.getElementById(id); if (e && o[id] != null && o[id] !== "") e.value = o[id]; });
+      ["layout","color"].forEach(function(n){
+        var r = o[n] && document.querySelector('input[name="' + n + '"][value="' + o[n] + '"]');
+        if (r) { r.checked = true; r.dispatchEvent(new Event("change", { bubbles: true })); }
+      });
+      var f = document.getElementById("title"); if (f) f.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+    ready = true;
+  }).catch(function(){ ready = true; });
 })();
 </script>
 </body>

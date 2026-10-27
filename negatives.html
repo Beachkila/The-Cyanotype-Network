@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="maker.css?v=11">
 <style>
   /* ---- tokens (swap this block to match the Network's :root exactly) ---- */
   :root{
@@ -147,6 +148,19 @@
   .tag-help{display:inline-block;background:var(--help-bg);color:var(--help-ink);font-size:10.5px;font-family:var(--mono);letter-spacing:.06em;padding:2px 7px;border-radius:20px;vertical-align:middle}
 
   @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+  /* ---- shared maker space ---- */
+  .canvas-area{position:relative}
+  /* phone: one screen, preview on top, panels swipe underneath */
+  html.mk-on .mk-view .stage-card{display:flex;flex-direction:column;position:static;overflow:visible}
+  html.mk-on .stage-head{display:none}
+  html.mk-on .canvas-area{flex:1;min-height:0;padding:12px;background:transparent}
+  html.mk-on .viewer canvas{max-height:calc(var(--mk-stage-h,400px) - 24px)}
+  .mk-panel #curveCanvas{height:132px;border-radius:8px}
+  .mk-panel .histo .cap{font-size:12px;color:var(--mk-gray)}
+  .mk-panel #histCanvas{height:44px}
+  .mk-panel table.report td{font-size:13px;padding:7px 0}
+  .mk-panel #loadBtn{flex:1 0 100%}
 </style>
 </head>
 <body>
@@ -174,9 +188,9 @@
     <aside class="col col-left">
       <div class="row">
         <div class="row-head"><b>Source</b></div>
-        <span class="title">Luminance is extracted (Rec.709); output is monochrome.</span>
+        <span class="title">Luminance is extracted (Rec.709); output is monochrome. Rotate or flip before you tune.</span>
         <div class="stack">
-          <button class="btn ghost" id="loadBtn">Load image…</button>
+          <button class="btn ghost" id="loadBtn">Change image…</button>
           <div class="orient" id="orientRow">
             <button class="act" data-o="rotL">Rotate ↺</button>
             <button class="act" data-o="rotR">Rotate ↻</button>
@@ -184,8 +198,7 @@
             <button class="act" data-o="flipV">Flip ⇅</button>
           </div>
         </div>
-        <input type="file" id="fileInput" accept="image/*" hidden>
-      </div>
+              </div>
 
       <div class="row">
         <div class="row-head"><b>Tone</b></div>
@@ -222,11 +235,7 @@
         <span class="dim" id="dimReadout">no image</span>
       </div>
       <div class="canvas-area" id="canvasArea">
-        <div class="empty" id="dropzone">
-          <strong>Drop an image, or click to browse</strong>
-          <span>JPEG, PNG, WebP — anything the browser can decode.</span><br>
-          <span class="k">nothing leaves your machine</span>
-        </div>
+        <div class="mk-chip-host" id="chipHost"></div>
         <div class="viewer" id="viewer" hidden>
           <canvas id="origCanvas"></canvas>
           <canvas id="procCanvas"></canvas>
@@ -301,6 +310,7 @@
   </div>
 </div>
 
+<script src="js/maker.js?v=11"></script>
 <script>
 "use strict";
 (function(){
@@ -323,7 +333,7 @@
 
   var $=function(id){return document.getElementById(id);};
   var els={};
-  ["dropzone","viewer","origCanvas","procCanvas","canvasArea","fileInput","loadBtn",
+  ["viewer","origCanvas","procCanvas","canvasArea","loadBtn","chipHost",
    "bri","briV","con","conV","gam","gamV",
    "claheOn","claheClip","claheClipV","claheTiles","claheTilesV",
    "sharpAmt","sharpAmtV","sharpRad","sharpRadV",
@@ -583,7 +593,7 @@
 
   // ---------- render ----------
   var pending=false;
-  function scheduleRender(){if(pending)return;pending=true;requestAnimationFrame(function(){pending=false;render();});}
+  function scheduleRender(){if(window.Maker)Maker.saveState();if(pending)return;pending=true;requestAnimationFrame(function(){pending=false;render();});}
   function render(){
     if(!work.lum)return;
     var w=work.w,h=work.h;
@@ -670,7 +680,7 @@
 
   // ---------- view / wipe ----------
   var currentView="split",splitPct=50;
-  function setView(v){currentView=v;
+  function setView(v){currentView=v;if(window.Maker)Maker.saveState();
     Array.prototype.forEach.call(els.viewMode.querySelectorAll("button"),function(b){b.classList.toggle("on",b.dataset.v===v);});
     var labels=els.viewer.querySelectorAll(".split-label");
     if(v==="split"){els.splitHandle.style.left=splitPct+"%";els.procCanvas.style.clipPath="inset(0 0 0 "+splitPct+"%)";
@@ -681,21 +691,44 @@
   function sDown(e){e.preventDefault();window.addEventListener("mousemove",sMove);window.addEventListener("mouseup",sEnd);window.addEventListener("touchmove",sMove,{passive:false});window.addEventListener("touchend",sEnd);}
   function sMove(e){var r=els.procCanvas.getBoundingClientRect();var cx=(e.touches?e.touches[0].clientX:e.clientX)-r.left;
     splitPct=clampI(cx/r.width*100,0,100);els.splitHandle.style.left=splitPct+"%";els.procCanvas.style.clipPath="inset(0 0 0 "+splitPct+"%)";e.preventDefault();}
-  function sEnd(){window.removeEventListener("mousemove",sMove);window.removeEventListener("mouseup",sEnd);window.removeEventListener("touchmove",sMove);window.removeEventListener("touchend",sEnd);}
+  function sEnd(){Maker.saveState();window.removeEventListener("mousemove",sMove);window.removeEventListener("mouseup",sEnd);window.removeEventListener("touchmove",sMove);window.removeEventListener("touchend",sEnd);}
 
   // ---------- load ----------
-  function loadFile(file){
-    if(!file)return;var url=URL.createObjectURL(file),img=new Image();
-    img.onload=function(){
-      var c=document.createElement("canvas");c.width=img.naturalWidth;c.height=img.naturalHeight;
-      c.getContext("2d").drawImage(img,0,0);orig0=c;
-      orient={rot:0,flipH:false,flipV:false};
-      applyOrientation();
-      els.dropzone.hidden=true;els.viewer.hidden=false;els.exportBtn.disabled=false;
-      URL.revokeObjectURL(url);scheduleRender();
-    };
-    img.onerror=function(){els.dropzone.innerHTML='<strong style="color:var(--danger)">Couldn\u2019t decode that file</strong><span>Try a JPEG or PNG export.</span>';};
-    img.src=url;
+  // Opened by the shared start sheet (your prints, camera, file, recent).
+  // state: the settings this tool last used on this image, if any.
+  function loadBlob(blob,info){
+    return new Promise(function(res,rej){
+      var url=URL.createObjectURL(blob),img=new Image();
+      img.onload=function(){
+        var c=document.createElement("canvas");c.width=img.naturalWidth;c.height=img.naturalHeight;
+        c.getContext("2d").drawImage(img,0,0);orig0=c;
+        var st=info&&info.state;
+        orient=st&&st.orient?{rot:st.orient.rot||0,flipH:!!st.orient.flipH,flipV:!!st.orient.flipV}:{rot:0,flipH:false,flipV:false};
+        if(st&&st.params)applyParams(st.params);
+        if(st&&st.fmt&&els.fmtSel.querySelector('option[value="'+st.fmt+'"]')){els.fmtSel.value=st.fmt;exportBtnLabel();}
+        if(st&&typeof st.split==="number")splitPct=st.split;
+        applyOrientation();
+        els.viewer.hidden=false;els.exportBtn.disabled=false;
+        setView(st&&st.view||currentView);
+        URL.revokeObjectURL(url);scheduleRender();res();
+      };
+      img.onerror=function(){URL.revokeObjectURL(url);rej(new Error("decode"));};
+      img.src=url;
+    });
+  }
+  function getState(){
+    return {params:params,orient:orient,view:currentView,split:splitPct,fmt:els.fmtSel.value};
+  }
+  // Sets every control from a saved set of settings.
+  function applyParams(p){
+    Object.keys(p).forEach(function(k){if(k in params)params[k]=p[k];});
+    if(p.points)params.points=p.points.map(function(q){return{x:q.x,y:q.y};});
+    els.bri.value=params.bri;els.con.value=params.con;els.gam.value=params.gam;
+    els.claheOn.checked=params.claheOn;els.claheClip.value=params.clip;els.claheTiles.value=params.tiles;
+    els.sharpAmt.value=params.sharpAmt;els.sharpRad.value=params.sharpRad;
+    els.outBlack.value=params.outBlack;els.outWhite.value=params.outWhite;els.invertOn.checked=params.invert;
+    els.regOn.checked=params.regOn;els.regStyle.value=params.regStyle;els.regMargin.value=params.regMargin;els.regDark.checked=params.regDark;
+    labels();drawCurve();
   }
 
   // ---------- export ----------
@@ -743,12 +776,7 @@
     els.outWhiteV.textContent=params.outWhite;
     els.regMarginV.textContent=params.regMargin+"%";
   }
-  els.loadBtn.onclick=function(){els.fileInput.click();};
-  els.dropzone.onclick=function(){els.fileInput.click();};
-  els.fileInput.onchange=function(e){if(e.target.files[0])loadFile(e.target.files[0]);};
-  ["dragover","dragenter"].forEach(function(ev){els.canvasArea.addEventListener(ev,function(e){e.preventDefault();els.dropzone.classList.add("hot");});});
-  ["dragleave","drop"].forEach(function(ev){els.canvasArea.addEventListener(ev,function(e){e.preventDefault();els.dropzone.classList.remove("hot");});});
-  els.canvasArea.addEventListener("drop",function(e){var f=e.dataTransfer.files[0];if(f)loadFile(f);});
+  els.loadBtn.onclick=function(){Maker.openStart(!!orig0);};
 
   els.orientRow.addEventListener("click",function(e){
     var o=e.target.getAttribute("data-o");if(!o||!orig0)return;
@@ -775,7 +803,7 @@
   els.regDark.onchange=function(){params.regDark=this.checked;scheduleRender();};
 
   if(!canEncode("image/webp")){var wo=els.fmtSel.querySelector('option[value="webp"]');if(wo)wo.remove();}
-  els.fmtSel.onchange=exportBtnLabel;
+  els.fmtSel.onchange=function(){exportBtnLabel();Maker.saveState();};
 
   els.curveCanvas.addEventListener("mousedown",cDown);
   els.curveCanvas.addEventListener("touchstart",cDown,{passive:false});
@@ -789,17 +817,33 @@
 
   els.exportBtn.onclick=exportImage;
   els.resetBtn.onclick=function(){
-    params.bri=0;params.con=1;params.gam=1;params.claheOn=true;params.clip=3.0;params.tiles=8;
-    params.sharpAmt=0;params.sharpRad=2;params.outBlack=0;params.outWhite=255;params.invert=true;
-    params.regOn=false;params.regStyle="both";params.regMargin=6;params.regDark=false;
-    params.points=presets.highlights.map(function(p){return{x:p.x,y:p.y};});
-    els.bri.value=0;els.con.value=1;els.gam.value=1;els.claheOn.checked=true;els.claheClip.value=3.0;els.claheTiles.value=8;
-    els.sharpAmt.value=0;els.sharpRad.value=2;els.outBlack.value=0;els.outWhite.value=255;els.invertOn.checked=true;
-    els.regOn.checked=false;els.regStyle.value="both";els.regMargin.value=6;els.regDark.checked=false;
-    labels();drawCurve();scheduleRender();
+    applyParams({bri:0,con:1,gam:1,claheOn:true,clip:3.0,tiles:8,sharpAmt:0,sharpRad:2,outBlack:0,outWhite:255,invert:true,
+      regOn:false,regStyle:"both",regMargin:6,regDark:false,points:presets.highlights});
+    scheduleRender();
   };
 
   labels();drawCurve();updateReport();exportBtnLabel();
+
+  // ---------- shared maker space ----------
+  var rowsL=document.querySelectorAll(".col-left > .row"), rowsR=document.querySelectorAll(".col-right > .row");
+  Maker.editor({
+    stage:document.querySelector(".stage-card"),
+    panels:[
+      {title:"Source",  nodes:[rowsL[0]]},
+      {title:"Tone",    nodes:[rowsL[1]]},
+      {title:"CLAHE",   nodes:[rowsL[2]]},
+      {title:"Sharpen", nodes:[rowsL[3]]},
+      {title:"Curve",   nodes:[rowsR[0]]},
+      {title:"Output",  nodes:[document.querySelector(".histo"),rowsR[1]]},
+      {title:"Marks",   nodes:[rowsR[2]]},
+      {title:"File",    nodes:[rowsR[4],rowsR[3]]}
+    ],
+    toolbar:[els.viewMode], chip:els.chipHost,
+    actions:[els.resetBtn,els.exportBtn],
+    hide:[document.querySelector(".page-head")],
+    onLayout:function(){if(orig0)scheduleRender();}
+  });
+  Maker.init({tool:"negatives",label:"Negatives",chipHost:els.chipHost,onImage:loadBlob,getState:getState});
 })();
 </script>
 </body>

@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="maker.css?v=11">
 <style>
   :root{
     --paper:#f6f4ee;
@@ -88,7 +89,23 @@
   .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:baseline}
 
   @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+  /* ---- shared maker space ---- */
+  #stageWrap{position:relative;margin-top:16px}
+  #chipHost{position:static;margin-bottom:4px}
+  #plateSeg{display:none}
+  .dl-one{display:none}
+  html.mk-on #plateSeg{display:inline-flex}
+  html.mk-on #stageWrap{display:flex;flex-direction:column}
+  html.mk-on #plates{flex:1;min-height:0;display:block}
+  html.mk-on .plate{display:none;height:100%;border:0;border-radius:0;background:transparent}
+  html.mk-on .plate.on{display:flex}
+  html.mk-on .plate .bar,html.mk-on .plate .foot{display:none}
+  html.mk-on .plate .stage{flex:1;min-height:0;padding:12px;background:transparent}
+  html.mk-on .plate canvas{max-height:calc(var(--mk-stage-h,400px) - 24px);width:auto}
+  .mk-actions .dl-one{display:flex}
 </style>
+<script src="js/maker.js?v=11"></script>
 </head>
 <body>
 <div class="masthead">
@@ -111,11 +128,6 @@
     <span class="page-sub">RGB to CMY / CMYK separations — per-channel film or ink, negative or positive.</span>
   </div>
 
-  <div id="drop" tabindex="0" role="button" aria-label="Load an image">
-    <p><strong>Drop an image</strong> or click to choose</p>
-    <p>PNG / JPG / WEBP · processed at native resolution</p>
-  </div>
-  <input type="file" id="file" accept="image/*" hidden>
 
   <div class="controls" id="controls" style="display:none">
     <div class="ctl">
@@ -156,9 +168,14 @@
       <label>&nbsp;</label>
       <button class="push" id="dlAll">Download all plates (PNG)</button>
     </div>
+    <button class="push dl-one" id="dlOne" type="button">This plate</button>
   </div>
 
-  <div id="plates"><div class="empty">no image loaded</div></div>
+  <div id="stageWrap">
+    <div class="mk-chip-host" id="chipHost"></div>
+    <div class="seg" id="plateSeg" role="group" aria-label="Plate"></div>
+    <div id="plates"><div class="empty">no image loaded</div></div>
+  </div>
 
   <div class="note" id="note" style="display:none">
     <b>Negative</b> — clear where the ink prints; expose through it on transparency.
@@ -169,15 +186,13 @@
 <script>
 (function(){
   "use strict";
-  var drop=document.getElementById('drop'),
-      file=document.getElementById('file'),
-      controls=document.getElementById('controls'),
+  var controls=document.getElementById('controls'),
       platesEl=document.getElementById('plates'),
       note=document.getElementById('note');
 
   var state={ img:null, w:0, h:0,
               cov:null,          // {c,m,y,k} Uint8ClampedArray coverage 0..255
-              useK:false, pol:'neg', view:'film', reg:false };
+              useK:false, pol:'neg', view:'film', reg:false, plate:0 };
 
   var CH=[
     {key:'c', name:'Cyan',    rgb:[0,174,239]},
@@ -186,21 +201,26 @@
     {key:'k', name:'Black',   rgb:[26,26,26]}
   ];
 
-  /* ---- input ---- */
-  drop.addEventListener('click',function(){file.click();});
-  drop.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();file.click();}});
-  drop.addEventListener('dragover',function(e){e.preventDefault();drop.classList.add('hot');});
-  drop.addEventListener('dragleave',function(){drop.classList.remove('hot');});
-  drop.addEventListener('drop',function(e){e.preventDefault();drop.classList.remove('hot');if(e.dataTransfer.files[0])load(e.dataTransfer.files[0]);});
-  file.addEventListener('change',function(){if(file.files[0])load(file.files[0]);});
-
-  function load(f){
-    if(!/^image\//.test(f.type)){platesEl.innerHTML='<div class="empty">that file isn\'t an image</div>';return;}
-    var url=URL.createObjectURL(f);
-    var im=new Image();
-    im.onload=function(){URL.revokeObjectURL(url);state.img=im;state.w=im.naturalWidth;state.h=im.naturalHeight;separate();controls.style.display='flex';note.style.display='block';drop.querySelector('strong').textContent=f.name;};
-    im.onerror=function(){URL.revokeObjectURL(url);platesEl.innerHTML='<div class="empty">couldn\'t decode that image</div>';};
-    im.src=url;
+  /* ---- input: the shared start sheet (your prints, camera, file, recent) ---- */
+  function loadBlob(blob,info){
+    return new Promise(function(res,rej){
+      var url=URL.createObjectURL(blob),im=new Image();
+      im.onload=function(){
+        URL.revokeObjectURL(url);state.img=im;state.w=im.naturalWidth;state.h=im.naturalHeight;
+        if(info&&info.state)applyState(info.state);
+        separate();controls.style.display='flex';note.style.display='block';res();
+      };
+      im.onerror=function(){URL.revokeObjectURL(url);rej(new Error('decode'));};
+      im.src=url;
+    });
+  }
+  function getState(){return {useK:state.useK,pol:state.pol,view:state.view,reg:state.reg,fmt:fmtSel.value,plate:state.plate};}
+  function press(id,v){[].forEach.call(document.getElementById(id).querySelectorAll('button'),function(x){x.setAttribute('aria-pressed',x.getAttribute('data-v')===v);});}
+  function applyState(st){
+    state.useK=!!st.useK;state.pol=st.pol||'neg';state.view=st.view||'film';state.reg=!!st.reg;state.plate=st.plate||0;
+    press('segK',state.useK?'cmyk':'cmy');press('segPol',state.pol);press('segView',state.view);
+    document.getElementById('reg').checked=state.reg;
+    if(st.fmt&&fmtSel.querySelector('option[value="'+st.fmt+'"]')){fmtSel.value=st.fmt;dlLabel();}
   }
 
   /* ---- one-pass RGB -> coverage arrays ---- */
@@ -275,6 +295,15 @@
       panel.querySelector('.foot button').addEventListener('click',function(){save(cvs,ch.name);});
       platesEl.appendChild(panel);
     });
+    plateTabs(active);
+    if(window.Maker)Maker.saveState();
+  }
+  // Phones show one plate at a time; this picks which.
+  function plateTabs(active){
+    var segP=document.getElementById('plateSeg');
+    if(state.plate>=active.length)state.plate=0;
+    segP.innerHTML=active.map(function(ch,i){return '<button type="button" data-i="'+i+'" aria-pressed="'+(i===state.plate)+'">'+ch.name+'</button>';}).join('');
+    [].forEach.call(platesEl.querySelectorAll('.plate'),function(p,i){p.classList.toggle('on',i===state.plate);});
   }
 
   function drawReg(g,w,h,m,neg,ink){
@@ -368,6 +397,7 @@
     cvs.toBlob(function(b){if(b)saveBlob(b,name);},f.mime,f.q);
   }
 
+  function dlLabel(){document.getElementById('dlAll').textContent=(document.documentElement.classList.contains('mk-on')?'Download all (':'Download all plates (')+curFmt().label+')';}
   /* ---- controls ---- */
   function seg(id,cb){
     var el=document.getElementById(id);
@@ -382,13 +412,37 @@
   seg('segView',function(v){state.view=v;render();});
   document.getElementById('reg').addEventListener('change',function(e){state.reg=e.target.checked;render();});
   if(!canEncode('image/webp')){var wo=fmtSel.querySelector('option[value="webp"]');if(wo)wo.remove();}
-  fmtSel.addEventListener('change',function(){
-    document.getElementById('dlAll').textContent='Download all plates ('+curFmt().label+')';
+  fmtSel.addEventListener('change',function(){dlLabel();if(window.Maker)Maker.saveState();});
+  document.getElementById('plateSeg').addEventListener('click',function(e){
+    var b=e.target.closest('button');if(!b)return;state.plate=+b.getAttribute('data-i');
+    plateTabs(state.useK?CH:CH.slice(0,3));Maker.saveState();
+  });
+  document.getElementById('dlOne').addEventListener('click',function(){
+    var cvs=platesEl.querySelectorAll('canvas')[state.plate];var ch=(state.useK?CH:CH.slice(0,3))[state.plate];
+    if(cvs&&ch)save(cvs,ch.name);
   });
   document.getElementById('dlAll').addEventListener('click',function(){
     var cvs=platesEl.querySelectorAll('canvas');var names=(state.useK?CH:CH.slice(0,3));
     [].forEach.call(cvs,function(c,i){setTimeout(function(){save(c,names[i].name);},i*350);});
   });
+
+  /* ---- shared maker space ---- */
+  var ctls=controls.querySelectorAll('.ctl');
+  Maker.editor({
+    stage:document.getElementById('stageWrap'),
+    panels:[
+      {title:'Plates',nodes:[ctls[0]]},
+      {title:'Output',nodes:[ctls[1],note]},
+      {title:'Render',nodes:[ctls[2]]},
+      {title:'Align', nodes:[ctls[3]]},
+      {title:'File',  nodes:[ctls[4]]}
+    ],
+    toolbar:[document.getElementById('plateSeg')], chip:document.getElementById('chipHost'),
+    actions:[document.getElementById('dlOne'),document.getElementById('dlAll')],
+    hide:[document.querySelector('.page-head'),ctls[5]],
+    onLayout:dlLabel
+  });
+  Maker.init({tool:'cmyk',label:'CMYK',chipHost:document.getElementById('chipHost'),onImage:loadBlob,getState:getState});
 })();
 </script>
 </body>

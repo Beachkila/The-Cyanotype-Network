@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Gallery Bench · The Cyanotype Network</title>
 <meta name="description" content="Square up and neutralize a photograph of a print. Everything stays on your device.">
+<link rel="stylesheet" href="maker.css?v=11">
+<script src="js/maker.js?v=11"></script>
 <style>
 /* ---- tokens: taken from the Network's style.css :root ---- */
 :root{
@@ -147,6 +149,20 @@ select,input[type=number]{
 @media (min-width: 900px){
   .wrap{ max-width:1200px; }
 }
+
+/* ---- shared maker space ---- */
+#chipHost{ position:static; margin-bottom:10px; }
+html.mk-on #strip{ flex:0 0 auto; margin:0; padding:2px 0; overflow:visible; }
+html.mk-on #strip img{ width:36px; height:36px; border-width:2px; }
+html.mk-on #strip button{ display:none; }
+html.mk-on #stage, html.mk-on #result, html.mk-on #wallRes{ display:none; align-items:center; justify-content:center; padding:12px !important; }
+html.mk-on[data-gb-view="square"] #stage,
+html.mk-on[data-gb-view="result"] #result,
+html.mk-on[data-gb-view="wall"] #wallRes{ display:flex; }
+html.mk-on #stage canvas, html.mk-on #result canvas, html.mk-on #wallRes canvas{
+  width:auto; height:auto; max-width:100%; max-height:calc(var(--mk-stage-h,400px) - 24px); margin:0; }
+html.mk-on #stage{ background:#2b2f33 !important; }
+.mk-panel .pieces{ border:1px solid var(--mk-divider) !important; border-radius:8px; }
 </style>
 </head>
 <body>
@@ -168,15 +184,11 @@ if (window.self !== window.top) {
     <div class="page-sub">Square up a photo of a print and neutralize its paper. Nothing leaves your device.</div>
   </div>
 
-  <!-- 1 · LOAD -->
-  <section>
-    <div class="step"><b>1</b> · Load</div>
-    <div class="drop" id="drop" role="button" tabindex="0">
-      Tap to choose photos, or drop them here.<br>
-      <b>JPEG, PNG, HEIC</b> — as many prints as you like.
-    </div>
-    <input type="file" id="file" accept="image/*" multiple>
-    <div class="strip hide" id="strip" style="margin-top:12px"></div>
+  <!-- 1 · PHOTOS -->
+  <section id="secLoad">
+    <div class="step"><b>1</b> · Photos</div>
+    <div class="mk-chip-host" id="chipHost"></div>
+    <div class="strip hide" id="strip"></div>
   </section>
 
   <!-- 2 · SQUARE -->
@@ -256,7 +268,7 @@ if (window.self !== window.top) {
   <!-- 6 · HANG -->
   <section id="secHang" class="hide">
     <div class="step"><b>6</b> · Hang</div>
-    <div class="result"><canvas id="wcv"></canvas></div>
+    <div class="result" id="wallRes"><canvas id="wcv"></canvas></div>
 
     <div class="two">
       <div>
@@ -549,22 +561,13 @@ var lcv = $("lcv"), lctx = lcv.getContext("2d");
 
 /* ---------------- loading ---------------- */
 
-$("drop").onclick = function(){ $("file").click(); };
-$("drop").onkeydown = function(e){ if (e.key === "Enter" || e.key === " ") { e.preventDefault(); $("file").click(); } };
-$("file").onchange = function(e){ add(e.target.files); e.target.value = ""; };
-
-["dragenter","dragover"].forEach(function(t){
-  $("drop").addEventListener(t, function(e){ e.preventDefault(); $("drop").classList.add("over"); });
-});
-["dragleave","drop"].forEach(function(t){
-  $("drop").addEventListener(t, function(e){ e.preventDefault(); $("drop").classList.remove("over"); });
-});
-$("drop").addEventListener("drop", function(e){ add(e.dataTransfer.files); });
-
-async function add(fileList){
-  var files = Array.prototype.slice.call(fileList).filter(function(f){ return /^image\//.test(f.type); });
+// Photos come in through the shared start sheet (your prints, camera, file, recent).
+// ids: the tray id each file is kept under on this device, so the session can come back.
+async function add(fileList, ids){
+  var files = Array.prototype.slice.call(fileList);
   for (var i = 0; i < files.length; i++){
     var f = files[i];
+    if (!/^image\//.test(f.type) && !/\.(heic|heif)$/i.test(f.name || "")) continue;
     try {
       var full = await createImageBitmap(f, { imageOrientation: "from-image" });
       var s = Math.min(1, PREVIEW_MAX / Math.max(full.width, full.height));
@@ -582,7 +585,8 @@ async function add(fileList){
         bmp: prev,
         srcW: prev.width, srcH: prev.height,
         quad: [[0,0],[1,0],[1,1],[0,1]],   // full frame, normalized 0–1
-        paper: "auto", mount: "default", wb: null, paperRGB: null, exported: false
+        paper: "auto", mount: "default", wb: null, paperRGB: null, exported: false,
+        trayId: ids && ids[i] || null
       });
     } catch (err) {
       note("Could not read " + f.name + ". Try exporting it as JPEG first.");
@@ -593,6 +597,62 @@ async function add(fileList){
   showStages();
   select(active);
   drawPieces();
+  chip();
+  saveSession();
+  if (window.Maker) Maker.refit();
+}
+function asFile(blob, name){
+  try { return new File([blob], name || "photo.jpg", { type: blob.type || "image/jpeg" }); }
+  catch (e) { blob.name = name; return blob; }
+}
+function chip(){
+  if (!window.Maker) return;
+  var n = items.length, it = items[active];
+  Maker.setChip(n === 1 ? (it ? it.name : "1 photo") : n + " photos", it && it.thumb, "Add");
+}
+
+/* ---------------- keeping the session on this device ---------------- */
+var HANG = ["wallShape","arrange","rows","scaleMode","wallColor","wallTexture","matWidth","matColor","frameWidth","frameColor","frameTexture","spacing","longEdge","quality"];
+var saveT = 0, restoring = false;
+function saveSession(){
+  if (!window.Maker || restoring) return;
+  clearTimeout(saveT);
+  saveT = setTimeout(function(){
+    var hang = {}; HANG.forEach(function(id){ hang[id] = $(id).value; });
+    hang.snap90 = $("snap90").checked;
+    Maker.Tray.meta("gb:session", {
+      active: active,
+      items: items.filter(function(it){ return it.trayId; }).map(function(it){
+        return { id: it.trayId, name: it.name, quad: it.quad, paper: it.paper, mount: it.mount, wb: it.wb, paperRGB: it.paperRGB };
+      }),
+      hang: hang
+    });
+  }, 500);
+}
+async function restoreSession(){
+  var ses = await Maker.Tray.meta("gb:session");
+  if (!ses || !ses.items || !ses.items.length) return false;
+  restoring = true;
+  var files = [], ids = [], saved = [];
+  for (var i = 0; i < ses.items.length; i++){
+    var rec = await Maker.Tray.get(ses.items[i].id);
+    if (!rec) continue;
+    files.push(asFile(rec.blob, ses.items[i].name || rec.name)); ids.push(rec.id); saved.push(ses.items[i]);
+  }
+  if (ses.hang){
+    HANG.forEach(function(id){ if (ses.hang[id] != null) $(id).value = ses.hang[id]; });
+    $("snap90").checked = !!ses.hang.snap90;
+    $("spacingVal").textContent = $("spacing").value;
+  }
+  await add(files, ids);
+  items.forEach(function(it, k){
+    var s = saved[k]; if (!s) return;
+    it.quad = s.quad || it.quad; it.paper = s.paper || "auto"; it.mount = s.mount || "default";
+    it.wb = s.wb || null; it.paperRGB = s.paperRGB || null;
+  });
+  restoring = false;
+  if (items.length){ select(Math.min(ses.active || 0, items.length - 1)); drawPieces(); chip(); }
+  return items.length > 0;
 }
 
 function drawStrip(){
@@ -630,6 +690,8 @@ function remove(i){
   drawStrip(); showStages();
   if (active >= 0) select(active); else clearStage();
   drawPieces();
+  chip(); saveSession();
+  if (!items.length && window.Maker) Maker.openStart(false);
 }
 
 function showStages(){
@@ -657,6 +719,7 @@ function select(i){
   syncWBButtons();
   $("aspect").value = it.paper;
   rectify();
+  chip();
 }
 
 /* ---------------- corner handles ---------------- */
@@ -687,6 +750,10 @@ function placeHandles(){
     h.style.left = (ox + p[0] * r.width) + "px";
     h.style.top  = (oy + p[1] * r.height) + "px";
   });
+  // keep the outline exactly over the photo, whatever the stage padding
+  var ov = $("ov");
+  ov.style.left = ox + "px"; ov.style.top = oy + "px"; ov.style.width = r.width + "px"; ov.style.height = r.height + "px";
+  ov.style.right = "auto"; ov.style.bottom = "auto";
   $("poly").setAttribute("points", it.quad.map(function(p){
     return (p[0] * it.srcW) + "," + (p[1] * it.srcH);
   }).join(" "));
@@ -922,6 +989,7 @@ function rectify(){
   rctx.drawImage(r.canvas, 0, 0);
   measure(r.imageData);
   if (!dragging) drawWall();
+  saveSession();
 }
 
 /* ---------------- paper white ---------------- */
@@ -1705,6 +1773,7 @@ function drawWall(){
     t += " " + unknown + " sheet" + (unknown === 1 ? " has" : "s have") +
          " no size set, placed at " + FALLBACK_LONG_IN + " in on the long edge.";
   $("hangNote").textContent = t;
+  saveSession();
 }
 
 ["wallShape","arrange","rows","scaleMode","wallColor","wallTexture",
@@ -1764,6 +1833,45 @@ $("btnWall").onclick = async function(){
 };
 
 function note(t){ $("exportNote").textContent = t; }
+
+/* ---------------- shared maker space ---------------- */
+["longEdge","quality"].forEach(function(id){ $(id).addEventListener("change", saveSession); });
+var GBVIEW = ["square","result","result","result","wall"];
+document.documentElement.setAttribute("data-gb-view", "square");
+Maker.editor({
+  stage: [$("stage"), $("result"), $("wallRes")],
+  toolbar: [$("strip")], chip: $("chipHost"),
+  panels: [
+    { title: "Square",     nodes: [$("secSquare")] },
+    { title: "Neutralize", nodes: [$("secColor")] },
+    { title: "Measured",   nodes: [$("secMeasure")] },
+    { title: "Export",     nodes: [$("secExport")] },
+    { title: "Hang",       nodes: [$("secHang")] }
+  ],
+  actions: [$("btnExport")],
+  hide: [document.querySelector(".page-head"), $("secLoad")],
+  onTab: function(i){
+    document.documentElement.setAttribute("data-gb-view", GBVIEW[i] || "square");
+    requestAnimationFrame(function(){ if (active >= 0) placeHandles(); });
+  },
+  onLayout: function(){ requestAnimationFrame(function(){ if (active >= 0) placeHandles(); }); }
+});
+Maker.init({
+  tool: "gallerybench", label: "Gallery Bench", multiple: true, chipHost: $("chipHost"),
+  hasImage: function(){ return items.length > 0; },
+  onImage: function(blob, info){
+    if (items.some(function(it){ return it.trayId === info.id; })) return;
+    return add([asFile(blob, info.name)], [info.id]);
+  },
+  onFiles: async function(fs){
+    var ids = [];
+    for (var i = 0; i < fs.length; i++){
+      try { var rec = await Maker.keep(fs[i], fs[i].name); ids.push(rec.id); } catch (e) { ids.push(null); }
+    }
+    await add(fs, ids);
+  },
+  restore: restoreSession
+});
 </script>
 </body>
 </html>
