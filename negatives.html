@@ -192,7 +192,7 @@
     <aside class="col col-left">
       <div class="row">
         <div class="row-head"><b>Source</b></div>
-        <span class="title">Luminance is extracted (Rec.709); output is monochrome. Rotate or flip before you tune.</span>
+        <span class="title">Rotate or flip before you tune.</span>
         <div class="stack">
           <button class="btn ghost" id="loadBtn">Change image…</button>
           <div class="orient" id="orientRow">
@@ -214,7 +214,7 @@
 
       <div class="row">
         <div class="row-head"><b>CLAHE</b></div>
-        <span class="title">Contrast-limited adaptive equalization — local detail without crushing the frame.</span>
+        <span class="title">Contrast-limited adaptive equalization — adjust local detail without crushing the image.</span>
         <label class="toggle" style="margin-bottom:4px"><input type="checkbox" id="claheOn" checked><span class="switch"></span><span class="tl">Apply CLAHE</span></label>
         <div class="field"><label>Clip limit</label><input type="range" id="claheClip" min="1" max="10" step="0.1" value="3"><span class="val" id="claheClipV">3.0</span></div>
         <div class="field"><label>Tile grid</label><input type="range" id="claheTiles" min="1" max="16" step="1" value="8"><span class="val" id="claheTilesV">8×8</span></div>
@@ -309,7 +309,7 @@
           <button class="btn" id="exportBtn" disabled>Export negative (PNG)</button>
           <button class="btn danger" id="resetBtn">Reset all</button>
         </div>
-        <p class="foot-note">Preview is downscaled for speed. Export re-runs the <b>full pipeline at native resolution</b>. TIFF is uncompressed grayscale tagged <b>300 dpi</b> — large, but what most RIPs and Photoshop want.</p>
+        <p class="foot-note">Preview is downscaled for speed. Export re-runs the <b>full pipeline at native resolution</b>.</p>
       </div>
     </aside>
   </div>
