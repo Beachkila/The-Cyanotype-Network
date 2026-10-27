@@ -69,12 +69,12 @@ html.mk-on{ --blue:#16385c; --blue-bright:#16385c; --prussian:#16385c; }
 
 /* stage: toolbar row + preview */
 .mk-stage{ flex:1 1 auto; min-height:0; display:flex; flex-direction:column; background:#e7e4dd;}
-.mk-bar{ flex:0 0 auto; display:flex; align-items:center; gap:10px; min-height:52px; padding:8px 12px;
+.mk-bar{ flex:0 0 auto; display:flex; align-items:center; gap:8px; min-height:52px; padding:8px 10px;
   background:var(--mk-paper); border-bottom:1px solid var(--mk-divider);}
 .mk-bar-l{ flex:1 1 auto; min-width:0; display:flex; align-items:center; gap:8px; overflow-x:auto; scrollbar-width:none;}
 .mk-bar-l::-webkit-scrollbar{ display:none;}
 .mk-bar .mk-chip-host{ position:static !important; flex:0 0 auto; margin:0 !important; max-width:46%;}
-.mk-bar .mk-chip{ box-shadow:none; background:#fff; max-width:100%; padding:3px 12px 3px 3px;}
+.mk-bar .mk-chip{ box-shadow:none; background:#fff; max-width:100%; padding:3px 10px 3px 3px; gap:6px;}
 .mk-bar .mk-chip span{ display:none;}
 .mk-view{ flex:1 1 auto; min-height:0; position:relative; overflow:hidden; display:flex; flex-direction:column;}
 .mk-view > *{ flex:1 1 auto; min-height:0; align-self:stretch !important; width:auto !important; max-width:none !important; margin:0 !important; border:0 !important; border-radius:0 !important;
@@ -83,8 +83,8 @@ html.mk-on{ --blue:#16385c; --blue-bright:#16385c; --prussian:#16385c; }
 /* view switchers in the toolbar all look the same */
 .mk-bar-l .seg, .mk-bar-l .vseg{ display:inline-flex !important; flex:0 0 auto; border:1px solid var(--mk-divider) !important;
   border-radius:8px !important; overflow:hidden; background:#fff !important; margin:0 !important;}
-.mk-bar-l .seg button, .mk-bar-l .vseg button{ font:500 14px var(--mk-sans) !important; letter-spacing:0 !important; color:var(--mk-gray) !important;
-  background:transparent !important; border:0 !important; border-right:1px solid var(--mk-divider) !important; padding:0 12px !important; white-space:nowrap;
+.mk-bar-l .seg button, .mk-bar-l .vseg button{ font:500 13px var(--mk-sans) !important; letter-spacing:0 !important; color:var(--mk-gray) !important;
+  background:transparent !important; border:0 !important; border-right:1px solid var(--mk-divider) !important; padding:0 9px !important; white-space:nowrap;
   min-height:36px; text-transform:none !important; font-variant:normal !important;}
 .mk-bar-l .seg button:last-child, .mk-bar-l .vseg button:last-child{ border-right:0 !important;}
 .mk-bar-l .seg button.on, .mk-bar-l .seg button[aria-pressed="true"], .mk-bar-l .vseg button.on{

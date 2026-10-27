@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="maker.css?v=12">
+<link rel="stylesheet" href="maker.css?v=13">
 <style>
   /* ---- tokens (swap this block to match the Network's :root exactly) ---- */
   :root{
@@ -233,8 +233,9 @@
       <div class="stage-head">
         <div class="seg" id="viewMode">
           <button data-v="split" class="on">Wipe</button>
-          <button data-v="orig">Positive</button>
+          <button data-v="orig">Original</button>
           <button data-v="proc">Negative</button>
+          <button data-v="pos">Positive</button>
         </div>
         <span class="dim" id="dimReadout">no image</span>
       </div>
@@ -482,7 +483,7 @@
   }
 
   // ---------- pipeline ----------
-  function runPipeline(L,w,h,radiusScale){
+  function runPipeline(L,w,h,radiusScale,withPositive){
     var pre=tonalLUT(params.bri,params.con,params.gam),i;
     var A=new Uint8ClampedArray(w*h);for(i=0;i<w*h;i++)A[i]=pre[L[i]];
     var B=params.claheOn?clahe(A,w,h,params.tiles,params.tiles,params.clip):A;
@@ -493,9 +494,13 @@
     }
     var curve=buildCurveLUT(params.points);
     var ob=params.outBlack,ow=params.outWhite,span=ow-ob,inv=params.invert;
-    var fin=new Uint8Array(256);
-    for(i=0;i<256;i++){var o=ob+curve[i]/255*span;if(inv)o=255-o;fin[i]=o<0?0:(o>255?255:o+0.5|0);}
+    var fin=new Uint8Array(256),pfin=new Uint8Array(256);
+    for(i=0;i<256;i++){var o=ob+curve[i]/255*span,p=o<0?0:(o>255?255:o+0.5|0);pfin[i]=p;if(inv)o=255-o;fin[i]=o<0?0:(o>255?255:o+0.5|0);}
     var res=new Uint8ClampedArray(w*h);for(i=0;i<w*h;i++)res[i]=fin[C[i]];
+    if(withPositive){                    // the adjusted image before inverting, for the Positive view
+      var pos=new Uint8ClampedArray(w*h);for(i=0;i<w*h;i++)pos[i]=pfin[C[i]];
+      return {neg:res,pos:pos};
+    }
     return res;
   }
   function lumToImageData(L,w,h){
@@ -601,8 +606,9 @@
   function render(){
     if(!work.lum)return;
     var w=work.w,h=work.h;
-    composite(els.origCanvas,octx,work.lum,w,h);
-    var out=runPipeline(work.lum,w,h,1);
+    // Original shows the photo as loaded; Positive and Wipe show it with every adjustment applied.
+    var both=runPipeline(work.lum,w,h,1,true),out=both.neg;
+    composite(els.origCanvas,octx,currentView==="orig"?work.lum:both.pos,w,h);
     composite(els.procCanvas,pctx,out,w,h);
     drawHistogram(out);
     updateReport();
@@ -688,12 +694,13 @@
 
   // ---------- view / wipe ----------
   var currentView="split",splitPct=50;
-  function setView(v){currentView=v;if(window.Maker)Maker.saveState();
+  function setView(v){var was=currentView;currentView=v;if(window.Maker)Maker.saveState();
+    if((was==="orig")!==(v==="orig")&&work.lum)scheduleRender();
     Array.prototype.forEach.call(els.viewMode.querySelectorAll("button"),function(b){b.classList.toggle("on",b.dataset.v===v);});
     var labels=els.viewer.querySelectorAll(".split-label");
     if(v==="split"){els.splitHandle.style.left=splitPct+"%";els.procCanvas.style.clipPath="inset(0 0 0 "+splitPct+"%)";
       els.splitHandle.style.display="block";labels.forEach(function(l){l.style.display="block";});}
-    else if(v==="orig"){els.procCanvas.style.clipPath="inset(0 0 0 100%)";els.splitHandle.style.display="none";labels.forEach(function(l){l.style.display="none";});}
+    else if(v==="orig"||v==="pos"){els.procCanvas.style.clipPath="inset(0 0 0 100%)";els.splitHandle.style.display="none";labels.forEach(function(l){l.style.display="none";});}
     else{els.procCanvas.style.clipPath="inset(0 0 0 0)";els.splitHandle.style.display="none";labels.forEach(function(l){l.style.display="none";});}
   }
   function sDown(e){e.preventDefault();window.addEventListener("mousemove",sMove);window.addEventListener("mouseup",sEnd);window.addEventListener("touchmove",sMove,{passive:false});window.addEventListener("touchend",sEnd);}
