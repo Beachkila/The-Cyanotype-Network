@@ -376,6 +376,8 @@
 
   function fillRecent() {
     Tray.list().then(function (all) {
+      // Posted prints are finished work: only tools that document them (Gallery Bench) offer them.
+      if (Maker.opts && Maker.opts.prints === false) all = all.filter(function (r) { return String(r.key || "").indexOf("print:") !== 0; });
       var g = document.getElementById("mkRecentG"), s = document.getElementById("mkRecent");
       if (!g) return;
       g.hidden = !all.length;
@@ -392,7 +394,7 @@
 
   var printsLoaded = false;
   function fillPrints() {
-    if (printsLoaded) return;
+    if (printsLoaded || (Maker.opts && Maker.opts.prints === false)) return;
     var a = app();
     if (!a) return;
     printsLoaded = true;

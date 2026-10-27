@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="maker.css?v=11">
+<link rel="stylesheet" href="maker.css?v=12">
 <style>
   /* ---- tokens (swap this block to match the Network's :root exactly) ---- */
   :root{
@@ -156,7 +156,11 @@
   html.mk-on .stage-head{display:none}
   html.mk-on .canvas-area{flex:1;min-height:0;padding:12px;background:transparent}
   html.mk-on .viewer canvas{max-height:calc(var(--mk-stage-h,400px) - 24px)}
-  .mk-panel #curveCanvas{height:132px;border-radius:8px}
+  .mk-panel #curveCanvas{height:150px;border-radius:8px;background:#fff}
+  .mk-panel .curve-note{margin:6px 0 8px !important}
+  .mk-panel .curve-btns{flex-wrap:nowrap !important;overflow-x:auto;scrollbar-width:none}
+  .mk-panel .curve-btns::-webkit-scrollbar{display:none}
+  .mk-panel .curve-btns .act{flex:0 0 auto;min-height:38px !important;padding:0 12px !important;font-size:13px !important}
   .mk-panel .histo .cap{font-size:12px;color:var(--mk-gray)}
   .mk-panel #histCanvas{height:44px}
   .mk-panel table.report td{font-size:13px;padding:7px 0}
@@ -310,7 +314,7 @@
   </div>
 </div>
 
-<script src="js/maker.js?v=11"></script>
+<script src="js/maker.js?v=12"></script>
 <script>
 "use strict";
 (function(){
@@ -636,30 +640,34 @@
   }
 
   // ---------- curve editor ----------
-  var CV={pad:13,drag:-1};
+  var CV={pad:13,drag:-1,d:1};
+  // Draw the curve at the size it is shown, at screen resolution, so it never stretches.
+  function fitCurve(){var c=els.curveCanvas,d=window.devicePixelRatio||1,w=Math.round(c.clientWidth*d),h=Math.round(c.clientHeight*d);
+    if(w>0&&h>0&&(c.width!==w||c.height!==h)){c.width=w;c.height=h;}CV.d=d;CV.pad=14*d;}
   function cg(){var w=els.curveCanvas.width,h=els.curveCanvas.height,p=CV.pad;return{x0:p,y0:p,x1:w-p,y1:h-p,iw:w-2*p,ih:h-2*p};}
   function toPix(pt){var g=cg();return{px:g.x0+pt.x*g.iw,py:g.y1-pt.y*g.ih};}
   function toNorm(px,py){var g=cg();return{x:(px-g.x0)/g.iw,y:(g.y1-py)/g.ih};}
   function drawCurve(){
+    fitCurve();var d=CV.d;
     var w=els.curveCanvas.width,h=els.curveCanvas.height,g=cg();cctx.clearRect(0,0,w,h);
-    cctx.strokeStyle="#efeadd";cctx.lineWidth=1;
+    cctx.strokeStyle="#ebe6da";cctx.lineWidth=1*d;
     for(var t=0;t<=4;t++){var gx=g.x0+g.iw*t/4,gy=g.y0+g.ih*t/4;
       cctx.beginPath();cctx.moveTo(gx,g.y0);cctx.lineTo(gx,g.y1);cctx.stroke();
       cctx.beginPath();cctx.moveTo(g.x0,gy);cctx.lineTo(g.x1,gy);cctx.stroke();}
-    cctx.strokeStyle="#d8d0be";cctx.setLineDash([3,3]);
+    cctx.strokeStyle="#cfc7b5";cctx.setLineDash([4*d,4*d]);
     cctx.beginPath();cctx.moveTo(g.x0,g.y1);cctx.lineTo(g.x1,g.y0);cctx.stroke();cctx.setLineDash([]);
     var lut=buildCurveLUT(params.points);
-    cctx.strokeStyle="#003e64";cctx.lineWidth=2;cctx.beginPath();
+    cctx.strokeStyle="#16385c";cctx.lineWidth=2.5*d;cctx.lineJoin="round";cctx.lineCap="round";cctx.beginPath();
     for(var i=0;i<256;i++){var px=g.x0+(i/255)*g.iw,py=g.y1-(lut[i]/255)*g.ih;if(i===0)cctx.moveTo(px,py);else cctx.lineTo(px,py);}
     cctx.stroke();
     for(var k=0;k<params.points.length;k++){var pp=toPix(params.points[k]);
-      cctx.fillStyle=(k===CV.drag)?"#003159":"#003e64";cctx.strokeStyle="#fff";cctx.lineWidth=1.5;
-      cctx.beginPath();cctx.arc(pp.px,pp.py,5,0,7);cctx.fill();cctx.stroke();}
+      cctx.fillStyle=(k===CV.drag)?"#0e2a47":"#16385c";cctx.strokeStyle="#fff";cctx.lineWidth=2*d;
+      cctx.beginPath();cctx.arc(pp.px,pp.py,(k===CV.drag?8:6.5)*d,0,7);cctx.fill();cctx.stroke();}
   }
   function evPos(e){var r=els.curveCanvas.getBoundingClientRect();
     var cx=(e.touches?e.touches[0].clientX:e.clientX)-r.left,cy=(e.touches?e.touches[0].clientY:e.clientY)-r.top;
     return{cx:cx*els.curveCanvas.width/r.width,cy:cy*els.curveCanvas.height/r.height};}
-  function hit(cx,cy){for(var k=0;k<params.points.length;k++){var pp=toPix(params.points[k]);if((pp.px-cx)*(pp.px-cx)+(pp.py-cy)*(pp.py-cy)<110)return k;}return -1;}
+  function hit(cx,cy){for(var k=0;k<params.points.length;k++){var pp=toPix(params.points[k]);var hr=18*CV.d;if((pp.px-cx)*(pp.px-cx)+(pp.py-cy)*(pp.py-cy)<hr*hr)return k;}return -1;}
   function cDown(e){e.preventDefault();var pos=evPos(e),k=hit(pos.cx,pos.cy);
     if(k<0){var nrm=toNorm(pos.cx,pos.cy);nrm.x=clampI(nrm.x,0.001,0.999);nrm.y=clampI(nrm.y,0,1);
       params.points.push(nrm);params.points.sort(function(a,b){return a.x-b.x;});k=params.points.indexOf(nrm);}
@@ -823,6 +831,7 @@
   };
 
   labels();drawCurve();updateReport();exportBtnLabel();
+  window.addEventListener("resize",function(){drawCurve();});
 
   // ---------- shared maker space ----------
   var rowsL=document.querySelectorAll(".col-left > .row"), rowsR=document.querySelectorAll(".col-right > .row");
@@ -841,9 +850,9 @@
     toolbar:[els.viewMode], chip:els.chipHost,
     actions:[els.resetBtn,els.exportBtn],
     hide:[document.querySelector(".page-head")],
-    onLayout:function(){if(orig0)scheduleRender();}
+    onLayout:function(){drawCurve();if(orig0)scheduleRender();}
   });
-  Maker.init({tool:"negatives",label:"Negatives",chipHost:els.chipHost,onImage:loadBlob,getState:getState});
+  Maker.init({tool:"negatives",label:"Negatives",prints:false,chipHost:els.chipHost,onImage:loadBlob,getState:getState});
 })();
 </script>
 </body>

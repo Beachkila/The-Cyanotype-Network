@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="maker.css?v=11">
+<link rel="stylesheet" href="maker.css?v=12">
 <style>
   :root{
     --paper:#f6f4ee;
@@ -105,7 +105,7 @@
   html.mk-on .plate canvas{max-height:calc(var(--mk-stage-h,400px) - 24px);width:auto}
   .mk-actions .dl-one{display:flex}
 </style>
-<script src="js/maker.js?v=11"></script>
+<script src="js/maker.js?v=12"></script>
 </head>
 <body>
 <div class="masthead">
@@ -442,7 +442,7 @@
     hide:[document.querySelector('.page-head'),ctls[5]],
     onLayout:dlLabel
   });
-  Maker.init({tool:'cmyk',label:'CMYK',chipHost:document.getElementById('chipHost'),onImage:loadBlob,getState:getState});
+  Maker.init({tool:'cmyk',label:'CMYK',prints:false,chipHost:document.getElementById('chipHost'),onImage:loadBlob,getState:getState});
 })();
 </script>
 </body>

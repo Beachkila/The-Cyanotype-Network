@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Negative Enlarger · The Cyanotype Network</title>
-<link rel="stylesheet" href="maker.css?v=11">
-<script src="js/maker.js?v=11"></script>
+<link rel="stylesheet" href="maker.css?v=12">
+<script src="js/maker.js?v=12"></script>
 <style>
 /* ---- tokens: taken from the Network's style.css :root ---- */
 :root{
@@ -603,7 +603,7 @@ Maker.editor({
   hide: [document.querySelector('aside .page-head')],
   onLayout: (on) => { const d = document.querySelector('details'); if (on && d) d.open = true; render(); }
 });
-Maker.init({ tool:'enlarger', label:'Enlarger', chipHost:$('chipHost'), onImage:loadBlob, getState });
+Maker.init({ tool:'enlarger', label:'Enlarger', prints:false, chipHost:$('chipHost'), onImage:loadBlob, getState });
 })();
 </script>
 </body>
