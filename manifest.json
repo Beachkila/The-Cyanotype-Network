@@ -4,23 +4,23 @@
   "description": "A community gallery and field-report network for cyanotype printers. A Studio Wetware project.",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#000000",
+  "background_color": "#16385c",
   "theme_color": "#16385c",
   "icons": [
     {
-      "src": "assets/icon-192.png",
+      "src": "assets/fern-icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "assets/icon-512.png",
+      "src": "assets/fern-icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "assets/icon-maskable-512.png",
+      "src": "assets/fern-icon-maskable-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
