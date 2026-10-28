@@ -221,13 +221,31 @@
         if (key === Maker._lastTrack) return;
         Maker._lastTrack = key;
         var tz = ""; try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ""; } catch (e) {}
-        fetch("https://script.google.com/macros/s/AKfycbwY8z3PHjGxa3NaMYpSUH6iPnRLGJnlKd2x0Ku9Nsd_h_N8CTEtbqnUQx8ya7Ll2oQvPA/exec", {
-          method: "POST", mode: "no-cors", keepalive: true,
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify({ tool: tool, action: action, format: String(format || ""), size: String(size || ""),
-                                 language: navigator.language || "", timeZone: tz })
+        Maker.userCode().then(function (user) {
+          return fetch("https://script.google.com/macros/s/AKfycbwY8z3PHjGxa3NaMYpSUH6iPnRLGJnlKd2x0Ku9Nsd_h_N8CTEtbqnUQx8ya7Ll2oQvPA/exec", {
+            method: "POST", mode: "no-cors", keepalive: true,
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify({ tool: tool, action: action, format: String(format || ""), size: String(size || ""),
+                                   language: navigator.language || "", timeZone: tz, user: user })
+          });
         }).catch(function () {});
       } catch (e) {}
+    },
+    // Anonymous user code for usage counts: a one-way hash of the account id, so the
+    // same member always gets the same code but the code can't be traced back to them.
+    userCode: function () {
+      if (Maker._userCode) return Maker._userCode;
+      Maker._userCode = new Promise(function (res) {
+        try {
+          var a = app(), uid = a && a.DB.uid();
+          if (!uid || !window.crypto || !crypto.subtle) return res("");
+          crypto.subtle.digest("SHA-256", new TextEncoder().encode("tcn-usage-v1:" + uid)).then(function (buf) {
+            var hex = Array.prototype.map.call(new Uint8Array(buf).slice(0, 4), function (b) { return ("0" + b.toString(16)).slice(-2); }).join("");
+            res("u" + hex);
+          }, function () { res(""); });
+        } catch (e) { res(""); }
+      });
+      return Maker._userCode;
     },
     // Re-measure the phone layout after a tool's content changes size.
     refit: function () { if (Maker._editor) setTimeout(Maker._editor.refit, 30); },
