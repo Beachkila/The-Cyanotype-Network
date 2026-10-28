@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="maker.css?v=13">
+<link rel="stylesheet" href="maker.css?v=14">
 <style>
   :root{
     --paper:#f6f4ee;
@@ -105,7 +105,7 @@
   html.mk-on .plate canvas{max-height:calc(var(--mk-stage-h,400px) - 24px);width:auto}
   .mk-actions .dl-one{display:flex}
 </style>
-<script src="js/maker.js?v=12"></script>
+<script src="js/maker.js?v=14"></script>
 </head>
 <body>
 <div class="masthead">
@@ -419,11 +419,12 @@
   });
   document.getElementById('dlOne').addEventListener('click',function(){
     var cvs=platesEl.querySelectorAll('canvas')[state.plate];var ch=(state.useK?CH:CH.slice(0,3))[state.plate];
-    if(cvs&&ch)save(cvs,ch.name);
+    if(cvs&&ch){save(cvs,ch.name);Maker.track('CMYK','Download plate',curFmt().label,ch.name+' · '+cvs.width+' × '+cvs.height);}
   });
   document.getElementById('dlAll').addEventListener('click',function(){
     var cvs=platesEl.querySelectorAll('canvas');var names=(state.useK?CH:CH.slice(0,3));
     [].forEach.call(cvs,function(c,i){setTimeout(function(){save(c,names[i].name);},i*350);});
+    if(cvs.length)Maker.track('CMYK','Download all plates',curFmt().label,cvs.length+' plates · '+cvs[0].width+' × '+cvs[0].height);
   });
 
   /* ---- shared maker space ---- */

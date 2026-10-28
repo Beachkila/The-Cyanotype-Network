@@ -212,6 +212,23 @@
       if (sh) sh.hidden = true;
       document.documentElement.classList.remove("mk-start-open");
     },
+    // Usage count for the TCN sheet: tool, action, format and size only.
+    // No images, names or account details. A repeat of the same download counts once.
+    // Never blocks or delays the download; failures are ignored.
+    track: function (tool, action, format, size) {
+      try {
+        var key = [tool, action, format, size, Maker.current ? Maker.current.id : ""].join("|");
+        if (key === Maker._lastTrack) return;
+        Maker._lastTrack = key;
+        var tz = ""; try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ""; } catch (e) {}
+        fetch("https://script.google.com/macros/s/AKfycbwY8z3PHjGxa3NaMYpSUH6iPnRLGJnlKd2x0Ku9Nsd_h_N8CTEtbqnUQx8ya7Ll2oQvPA/exec", {
+          method: "POST", mode: "no-cors", keepalive: true,
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({ tool: tool, action: action, format: String(format || ""), size: String(size || ""),
+                                 language: navigator.language || "", timeZone: tz })
+        }).catch(function () {});
+      } catch (e) {}
+    },
     // Re-measure the phone layout after a tool's content changes size.
     refit: function () { if (Maker._editor) setTimeout(Maker._editor.refit, 30); },
     busy: function (on) {

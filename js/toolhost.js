@@ -3,7 +3,7 @@
 // first time a tool is opened and then kept (hidden) while you visit other
 // screens, so the image, settings and zoom are still there when you come back.
 const ToolHost = {
-  V: "13",
+  V: "14",
   TOOLS: {
     negatives:    { src: "negatives.html",          title: "SoLaT Digital Negatives" },
     cmyk:         { src: "cmyk.html",               title: "CMYK Separation Bench" },

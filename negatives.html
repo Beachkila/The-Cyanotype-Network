@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="maker.css?v=13">
+<link rel="stylesheet" href="maker.css?v=14">
 <style>
   /* ---- tokens (swap this block to match the Network's :root exactly) ---- */
   :root{
@@ -315,7 +315,7 @@
   </div>
 </div>
 
-<script src="js/maker.js?v=12"></script>
+<script src="js/maker.js?v=14"></script>
 <script>
 "use strict";
 (function(){
@@ -769,7 +769,7 @@
       var c=document.createElement("canvas"),x=c.getContext("2d");
       composite(c,x,out,nativeDim.w,nativeDim.h);
       var name="solat-negative"+(params.regOn?"-reg":"")+"."+f.ext;
-      function done(){exportBtnLabel();els.exportBtn.disabled=false;}
+      function done(){exportBtnLabel();els.exportBtn.disabled=false;Maker.track("Negatives","Export negative",f.label,c.width+" × "+c.height);}
       if(isTiff){saveBlob(canvasToTIFF(c,true,300),name);done();return;}
       c.toBlob(function(blob){
         if(blob)saveBlob(blob,name);

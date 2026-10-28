@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Gallery Bench · The Cyanotype Network</title>
 <meta name="description" content="Square up and neutralize a photograph of a print. Everything stays on your device.">
-<link rel="stylesheet" href="maker.css?v=13">
-<script src="js/maker.js?v=12"></script>
+<link rel="stylesheet" href="maker.css?v=14">
+<script src="js/maker.js?v=14"></script>
 <style>
 /* ---- tokens: taken from the Network's style.css :root ---- */
 :root{
@@ -1156,6 +1156,8 @@ $("btnExport").onclick = async function(){
   if (manifest.items.length){
     $("manifestRow").classList.remove("hide");
     note("Exported " + manifest.items.length + " of " + items.length + ".");
+    Maker.track("Gallery Bench", "Export corrected files", "JPG",
+      manifest.items.length + (manifest.items.length === 1 ? " file" : " files") + " · " + longEdge + " px long edge");
   }
 };
 
@@ -1217,6 +1219,7 @@ $("btnManifest").onclick = function(){
   if (!manifest) return;
   download(new Blob([JSON.stringify(manifest, null, 2)], { type: "application/json" }),
            "correction_manifest.json");
+  Maker.track("Gallery Bench", "Download manifest", "JSON", manifest.items.length + (manifest.items.length === 1 ? " item" : " items"));
 };
 
 
@@ -1822,6 +1825,7 @@ $("btnWall").onclick = async function(){
     var blob = await new Promise(function(r){ wall.toBlob(r, "image/jpeg", q); });
     download(await withDPI(blob, 300), "gallery_wall.jpg");
     $("hangNote").textContent = "Exported gallery_wall.jpg at " + W + " × " + H + " px.";
+    Maker.track("Gallery Bench", "Export gallery wall", "JPG", W + " × " + H + " · " + pl.list.length + (pl.list.length === 1 ? " work" : " works"));
   } catch (err) {
     $("hangNote").textContent = "Stopped: " + err.message;
   } finally {

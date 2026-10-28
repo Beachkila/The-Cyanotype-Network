@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Negative Enlarger · The Cyanotype Network</title>
-<link rel="stylesheet" href="maker.css?v=13">
-<script src="js/maker.js?v=12"></script>
+<link rel="stylesheet" href="maker.css?v=14">
+<script src="js/maker.js?v=14"></script>
 <style>
 /* ---- tokens: taken from the Network's style.css :root ---- */
 :root{
@@ -580,6 +580,7 @@ Unprintable edge: ${fmt(L.m)} in   Overlap: ${fmt(L.s*2)} in   Taping border: at
     document.body.append(a); a.click(); a.remove();
     setTimeout(()=>URL.revokeObjectURL(a.href), 30000);
     st.textContent = `Downloaded ${L.n} sheets and an assembly guide.`;
+    Maker.track('Enlarger', 'Download sheets', 'ZIP', `${L.n} sheets · ${fmt(L.W)} × ${fmt(L.H)} in`);
   } catch(err){
     st.textContent = D > 360 ? 'This browser ran out of canvas memory at 600 dpi. Try 300 or 360 dpi.' : 'Export failed: ' + err.message;
   } finally { btn.disabled = false; btn.textContent = 'Download sheets (.zip)'; }
