@@ -45,6 +45,27 @@ const Shell = {
     const backdrop = document.getElementById("sheetBackdrop");
     if (backdrop) backdrop.addEventListener("click", () => Shell.closeAll());
 
+    // Line tab: the strip (strip.js) owns the stops sheet; this button only opens and closes it.
+    const lineBtn = document.getElementById("lineTab");
+    if (lineBtn) {
+      const sync = () => { lineBtn.hidden = !(window.SWTStrip && window.SWTStrip.hasSheet && window.SWTStrip.hasSheet()); };
+      lineBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const wasOpen = window.SWTStrip && window.SWTStrip.isOpen && window.SWTStrip.isOpen();
+        Shell.closeAll();
+        if (window.SWTStrip && !wasOpen) window.SWTStrip.open();
+      });
+      window.addEventListener("swt-sheet", (e) => {
+        const o = !!(e.detail && e.detail.open);
+        lineBtn.classList.toggle("open", o);
+        lineBtn.setAttribute("aria-expanded", String(o));
+        sync();
+      });
+      window.addEventListener("load", sync);
+      window.addEventListener("resize", sync);
+      setTimeout(sync, 600); setTimeout(sync, 2000);
+    }
+
     // Outside links in menus and sheets close them too.
     document.querySelectorAll(".dropdown a, .sheet a").forEach(a => a.addEventListener("click", () => Shell.closeAll()));
 
@@ -61,6 +82,7 @@ const Shell = {
 
   closeAll() {
     Shell.closeDropdowns();
+    if (window.SWTStrip && window.SWTStrip.close) window.SWTStrip.close();
     document.querySelectorAll(".sheet").forEach(s => { s.hidden = true; });
     const bd = document.getElementById("sheetBackdrop");
     if (bd) bd.hidden = true;

@@ -80,7 +80,7 @@
   </div>
 </header>
 
-<div class="swt-strip"></div>
+<div class="swt-strip" data-theme="light" data-phone="sheet" data-bar="#tabBar"></div>
 <script src="https://beachkila.github.io/SiteMap/strip.js" defer></script>
 
 <main class="col" id="view" aria-live="polite">
@@ -101,6 +101,7 @@
   <button type="button" data-sheet="toolsSheet" data-group="tools" aria-expanded="false" aria-controls="toolsSheet"><svg class="tb" aria-hidden="true"><use href="#i-tools_sun"/></svg>Tools</button>
   <button type="button" data-sheet="learnSheet" aria-expanded="false" aria-controls="learnSheet"><svg class="tb" aria-hidden="true"><use href="#i-learn"/></svg>Learn</button>
   <button type="button" data-sheet="youSheet" data-group="you" aria-expanded="false" aria-controls="youSheet"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.8" fill="currentColor"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><circle cx="19" cy="12" r="1.8" fill="currentColor"/></svg>More</button>
+  <button type="button" id="lineTab" data-line aria-expanded="false" aria-label="Line stops" hidden><span class="lbadge" aria-hidden="true">N</span>Line</button>
 </nav>
 <div class="sheet-backdrop" id="sheetBackdrop" hidden></div>
 <div class="sheet" id="toolsSheet" role="dialog" aria-label="Tools" hidden>

@@ -85,6 +85,11 @@ input:focus-visible,textarea:focus-visible{ outline:2px solid var(--prussian); o
   padding:7px 0 9px; display:flex; flex-direction:column; align-items:center; gap:2px; min-height:56px;}
 .tabbar svg{ width:22px; height:22px;}
 .tabbar button.active,.tabbar button.open{ color:var(--prussian); font-weight:700;}
+.tabbar .lbadge{ width:24px; height:24px; border-radius:50%; background:#0072CE; color:#fff; font-size:12px; font-weight:700;
+  display:grid; place-items:center; box-shadow:0 0 0 2px #fff, 0 0 0 3.5px #0072CE;}
+.tabbar button[data-line]{ gap:2px;}
+.tabbar button[hidden]{ display:none;}
+.tabbar button[data-line].open{ color:var(--prussian); font-weight:700;}
 .sheet-backdrop{ position:fixed; inset:0; z-index:43; background:rgba(20,23,26,.28);}
 .sheet-backdrop[hidden]{ display:none;}
 .sheet{ position:fixed; left:0; right:0; bottom:calc(56px + env(safe-area-inset-bottom)); z-index:44;
